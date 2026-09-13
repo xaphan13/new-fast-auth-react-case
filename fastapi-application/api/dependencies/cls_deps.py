@@ -36,7 +36,7 @@ class PathReaderDependency:
 
         return self._request.url.path
 
-    def read(self, **kwargs: str) -> dict[str, str]:
+    def read(self, **kwargs: str):
         return {
             "source": self.source,
             "path": self.path,
