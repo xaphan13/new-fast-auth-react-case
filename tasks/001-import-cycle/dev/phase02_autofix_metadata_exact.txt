@@ -1,0 +1,3 @@
+['blog_post', 'blog_user', 'order_product_association', 'orders', 'products', 'user']
+
+exit_code=0

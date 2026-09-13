@@ -11,7 +11,3 @@
 JWT-in-cookie через fastapi-users. art-роуты используют `Depends(active_user)`
 из auth_users; SessionMiddleware, самописный CSRF и helpers удалены.
 """
-
-from md_articles.setup_frontend import include_router_api_frontend, mount_vite_react_assets
-
-__all__ = ["include_router_api_frontend", "mount_vite_react_assets"]

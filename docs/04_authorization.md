@@ -270,6 +270,7 @@ async def on_after_register(self, user, request=None) -> None:
 async def get_user_db(session: CurrentSession) -> AsyncGenerator[SQLAlchemyUserDatabase, None]:
     yield SQLAlchemyUserDatabase(session, User)
 
+
 async def get_user_manager(user_db=Depends(get_user_db)) -> AsyncGenerator[UserManager, None]:
     yield UserManager(user_db)
 ```
@@ -295,11 +296,11 @@ async def get_user_manager(user_db=Depends(get_user_db)) -> AsyncGenerator[UserM
 from fastapi_users.authentication import CookieTransport
 
 cookie_transport = CookieTransport(
-    cookie_name=settings.auth_users.cookie_name,        # "auth"
+    cookie_name=settings.auth_users.cookie_name,  # "auth"
     cookie_max_age=settings.auth_users.cookie_max_age,  # 86400
-    cookie_secure=settings.auth_users.cookie_secure,    # False (dev)
-    cookie_httponly=settings.auth_users.cookie_httponly, # True
-    cookie_samesite=settings.auth_users.cookie_samesite, # "lax"
+    cookie_secure=settings.auth_users.cookie_secure,  # False (dev)
+    cookie_httponly=settings.auth_users.cookie_httponly,  # True
+    cookie_samesite=settings.auth_users.cookie_samesite,  # "lax"
 )
 ```
 
@@ -311,6 +312,7 @@ cookie_transport = CookieTransport(
 
 ```python
 from fastapi_users.authentication.strategy import JWTStrategy
+
 
 def get_jwt_strategy() -> JWTStrategy:
     return JWTStrategy(
@@ -350,16 +352,16 @@ auth_backend = AuthenticationBackend(
 `router` из 4 вложенных роутеров:
 
 ```python
-auth_router     = fastapi_users.get_auth_router(auth_backend)        # /auth/jwt/{login,logout}
+auth_router = fastapi_users.get_auth_router(auth_backend)  # /auth/jwt/{login,logout}
 register_router = fastapi_users.get_register_router(UserRead, UserCreate)  # /auth/register
-users_router    = fastapi_users.get_users_router(UserRead, UserUpdate)    # /users/me, /users/{id}
+users_router = fastapi_users.get_users_router(UserRead, UserUpdate)  # /users/me, /users/{id}
 # account_router — отдельный модуль auth_users/account.py
 
 router = APIRouter()
-router.include_router(auth_router,     prefix="/auth/jwt", tags=["auth-jwt"])
-router.include_router(register_router, prefix="/auth",    tags=["auth-register"])
-router.include_router(users_router,    prefix="/users",   tags=["users"])
-router.include_router(account_router)   # prefix="/auth", tags=["auth-account"] внутри account.py
+router.include_router(auth_router, prefix="/auth/jwt", tags=["auth-jwt"])
+router.include_router(register_router, prefix="/auth", tags=["auth-register"])
+router.include_router(users_router, prefix="/users", tags=["users"])
+router.include_router(account_router)  # prefix="/auth", tags=["auth-account"] внутри account.py
 ```
 
 Подключение к `main_app` — в `main.py`:
@@ -429,6 +431,7 @@ router.include_router(account_router)   # prefix="/auth", tags=["auth-account"] 
 
 ```python
 from auth_users import active_user
+
 
 async def art_manage_api(_user=Depends(active_user)): ...
 async def art_manage_add_all_api(_user=Depends(active_user)): ...
@@ -687,6 +690,7 @@ fastapi-application/auth_users/
 
 ```python
 from auth_users import router as auth_users_router
+
 include_router_api_frontend(main_app, auth_users_router=auth_users_router)
 ```
 
@@ -694,6 +698,7 @@ include_router_api_frontend(main_app, auth_users_router=auth_users_router)
 
 ```python
 from auth_users import active_user
+
 
 async def art_manage_api(_user=Depends(active_user)): ...
 ```

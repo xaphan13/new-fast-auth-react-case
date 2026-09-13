@@ -58,9 +58,7 @@ def fastapi_class_old(
 
     logF.info(f"fastapi_class_old 1 :\nclient={request.client} \napp.title='{request.app.title}'")
 
-    logF.info(
-        f"fastapi_class_old 2 :\nclient={request.client} \napp.title='{request.app.title}'"
-    )
+    logF.info(f"fastapi_class_old 2 :\nclient={request.client} \napp.title='{request.app.title}'")
 
     # Модифицируем Response (то, что уйдет клиенту)
     response.headers["X-Custom-Header"] = "Processed-By-FastAPI"

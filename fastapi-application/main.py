@@ -1,4 +1,3 @@
-import db_core
 import uvicorn
 from api import router_api
 from auth_users import router as auth_users_router
@@ -6,11 +5,14 @@ from base_dir_path import BASE_DIR
 from config_log import logF
 from core.config import settings
 from create_fastapi import create_app
+from db_core.model_registry import load_model_registry
 from ex_order_product.router_order_one import r_order_one
 from md_articles.setup_frontend import (
     include_router_api_frontend,
     mount_vite_react_assets,
 )
+
+load_model_registry()
 
 main_app = create_app(custom_docs_url=False)
 

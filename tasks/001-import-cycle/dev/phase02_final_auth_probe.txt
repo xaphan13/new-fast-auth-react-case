@@ -1,0 +1,3 @@
+auth-ok
+
+exit_code=0

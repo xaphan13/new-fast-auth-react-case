@@ -1,0 +1,4 @@
+route-count= 11
+required-paths= ['/api/blog/articles', '/api/blog/sections', '/auth/account', '/auth/jwt/login', '/auth/jwt/logout', '/auth/register', '/orders/get_all_orders', '/users/me']
+
+exit_code=0

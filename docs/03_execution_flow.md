@@ -34,12 +34,12 @@ main.py
 важен, см. «Маршрутизация» ниже):
 
 ```python
-main_app = create_app(custom_docs_url=False)   # каркас: ORJSON + lifespan + /docs
-main_app.include_router(router_api)            # /api/v1/*
-main_app.include_router(r_users_sql)           # /users/*
-main_app.include_router(r_order_one)           # /orders/*
-include_router_api_frontend(main_app)          # middleware auth + /static + /api/blog/*
-mount_vite_react_assets(main_app)              # /assets + catch-all (ПОСЛЕДНИМ)
+main_app = create_app(custom_docs_url=False)  # каркас: ORJSON + lifespan + /docs
+main_app.include_router(router_api)  # /api/v1/*
+main_app.include_router(r_users_sql)  # /users/*
+main_app.include_router(r_order_one)  # /orders/*
+include_router_api_frontend(main_app)  # middleware auth + /static + /api/blog/*
+mount_vite_react_assets(main_app)  # /assets + catch-all (ПОСЛЕДНИМ)
 ```
 
 ### Этап 2. Startup (lifespan)

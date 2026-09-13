@@ -22,7 +22,9 @@ if config.config_file_name is not None:
 
 # ===== ВСТАВИТЬ настоящий settings.db.url и target_metadata ===== #
 from db_core import Base
+from db_core.model_registry import load_model_registry
 
+load_model_registry()
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

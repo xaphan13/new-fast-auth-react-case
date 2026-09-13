@@ -1,0 +1,26 @@
+
+-- diff stat (tracked) --
+ fastapi-application/db_core/__init__.py     | 39 ++---------------------------
+ fastapi-application/md_articles/__init__.py |  4 ---
+ 2 files changed, 2 insertions(+), 41 deletions(-)
+
+-- phase/product scope --
+ M fastapi-application/db_core/__init__.py
+ M fastapi-application/md_articles/__init__.py
+?? fastapi-application/db_core/model_registry.py
+?? tasks/current/dev/phase01_progress.md
+
+-- raw phase outputs --
+?? tasks/current/dev/phase01_after_db_core_import.txt
+?? tasks/current/dev/phase01_after_db_core_ruff.txt
+?? tasks/current/dev/phase01_after_md_articles_auth_import.txt
+?? tasks/current/dev/phase01_after_md_articles_ruff.txt
+?? tasks/current/dev/phase01_after_registry_import.txt
+?? tasks/current/dev/phase01_after_registry_ruff.txt
+?? tasks/current/dev/phase01_final_auth_probe.txt
+?? tasks/current/dev/phase01_final_base_probe.txt
+?? tasks/current/dev/phase01_final_metadata_probe.txt
+?? tasks/current/dev/phase01_final_ruff_imports.txt
+?? tasks/current/dev/phase01_final_scope.txt
+
+exit=0
