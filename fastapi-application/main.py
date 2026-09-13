@@ -12,7 +12,7 @@ from md_articles.setup_frontend import (
     mount_vite_react_assets,
 )
 
-load_model_registry()
+# load_model_registry()
 
 main_app = create_app(custom_docs_url=False)
 
