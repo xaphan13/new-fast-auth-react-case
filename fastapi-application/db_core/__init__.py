@@ -4,7 +4,6 @@ __all__ = (
     "BlogUser",
     "Order",
     "OrderProductAssociation",
-    "Post",
     "Product",
     "User",
 )
@@ -14,12 +13,7 @@ from ex_order_product.model_order_product import (
     OrderProductAssociation,
     Product,
 )
-from ex_user_post.models.model_user_post import (
-    Post,
-)
-from ex_user_post.models.model_user_post import (
-    User as _ExUserPostUser,
-)
+
 from md_articles.models import (
     BlogPost,
     BlogUser,
@@ -27,10 +21,8 @@ from md_articles.models import (
 
 from db_core.model_base import Base
 
-# Сохраняем ex_user_post.User доступным под старым именем, чтобы не ломать
-# прямые импорты из ex_user_post.models.model_user_post — но как `User` в этом
-# пространстве имён теперь живёт fastapi-users User (см. __all__).
-_ = _ExUserPostUser
+from auth_users.models import User
+
 
 # ==============================================================================
 # auth_users.User — ИМПОРТ В КОНЦЕ.
@@ -46,4 +38,3 @@ _ = _ExUserPostUser
 # (его триггерит сам импорт), Python грузит модуль, класс User определяется и
 # попадает в Base.metadata.
 # ==============================================================================
-from auth_users.models import User
