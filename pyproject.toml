@@ -1,5 +1,5 @@
 [project]
-name = "my-fast-react-case"
+name = "new-fast-auth-react-case"
 version = "1.0.0"
 
 requires-python = ">=3.12"

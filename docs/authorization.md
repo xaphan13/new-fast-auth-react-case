@@ -6,7 +6,7 @@
 > Сопутствующие документы: [01_project_structure.md](01_project_structure.md)
 > (дерево файлов), [02_architecture.md](02_architecture.md) (слои), [03_execution_flow.md](03_execution_flow.md)
 > (lifespan и middleware). История замены самописной авторизации —
-> в [05_authorization_upgrade.md](05_authorization_upgrade.md).
+> в [05_authorization_upgrade.md](authorization_upgrade.md).
 
 Состояние кода: ветка `auth_refactor`, `len(main_app.routes) == 44`. Из них
 **9 auth-роутов** живут в пакете `fastapi-application/auth_users/` (вместо
@@ -701,7 +701,7 @@ async def art_manage_api(_user=Depends(active_user)): ...
 ## Приложение Б. История замены
 
 Подробная история «почему именно fastapi-users» и сравнение с донором —
-в [05_authorization_upgrade.md](05_authorization_upgrade.md). Краткая
+в [05_authorization_upgrade.md](authorization_upgrade.md). Краткая
 хронология:
 
 - 2026-09-12, фаза 1 — фундамент `auth_users` (`models`, `schemas`,

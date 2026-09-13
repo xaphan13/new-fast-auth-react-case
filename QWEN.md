@@ -56,7 +56,7 @@
 | `router_api` | `api/__init__.py` | `/api/v1` | `dep_examples/` (9 роутов Depends) + 4 стиля `/my_items/{item_id}` |
 | `r_users_sql` | `ex_user_post/router_users.py` | `/users` | CRUD-слой домена User/Post (2 роута) |
 | `r_order_one` | `ex_order_product/router_order_one.py` | `/orders` | 6 роутов Order: ORM/Core запись, фильтры, сортировка, joinedload |
-| `router_blog_api` | `md_articles/api_blog.py` | `/api/blog` | JSON API блога для React SPA: articles, sections, articles/{id}, art_manage + add_all + meta + sync. Авторизация (login/logout/register/users/me/account) вынесена в пакет `auth_users` (см. `docs/04_authorization.md`). |
+| `router_blog_api` | `md_articles/api_blog.py` | `/api/blog` | JSON API блога для React SPA: articles, sections, articles/{id}, art_manage + add_all + meta + sync. Авторизация (login/logout/register/users/me/account) вынесена в пакет `auth_users` (см. `docs/authorization.md`). |
 
 Итого 44 route-объекта: 21 API демо-доменов (`api/`, `ex_user_post/`, `ex_order_product/`)
 + 7 JSON-роутов блога (`/api/blog/*`) + 9 auth-роутов из пакета `auth_users/`

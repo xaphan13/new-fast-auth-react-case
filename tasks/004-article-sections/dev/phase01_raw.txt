@@ -1,6 +1,0 @@
-=== ruff ===
-All checks passed!
-=== routes ===
-40
-=== smoke ===
-python python

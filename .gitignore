@@ -16,6 +16,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+uv.lock
 
 # venvs and tools
 venv/
