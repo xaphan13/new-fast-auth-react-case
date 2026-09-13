@@ -1,12 +1,10 @@
 from base_dir_path import BASE_DIR
-
 from pydantic import (
-    BaseModel,
     AnyUrl,
-    UrlConstraints,
+    BaseModel,
     PostgresDsn,
+    UrlConstraints,
 )
-
 from pydantic_settings import (
     BaseSettings,
     SettingsConfigDict,

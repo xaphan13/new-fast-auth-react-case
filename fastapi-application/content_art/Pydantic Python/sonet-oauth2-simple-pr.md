@@ -43,28 +43,29 @@ Google OAuth 2.0 следует стандартному потоку "Authoriza
 ```python
 def generate_google_oauth_redirect_uri():
     random_state = secrets.token_urlsafe(16)  # Защита от CSRF
-    state_storage.add(random_state)           # Сохраняем state для проверки
-    
+    state_storage.add(random_state)  # Сохраняем state для проверки
+
     query_params = {
-        "client_id": settings.OAUTH_GOOGLE_CLIENT_ID,        # ID приложения в Google
+        "client_id": settings.OAUTH_GOOGLE_CLIENT_ID,  # ID приложения в Google
         "redirect_uri": "http://localhost:3000/auth/google",  # Куда вернуть пользователя
-        "response_type": "code",                             # Тип ответа - код авторизации
-        "scope": " ".join([                                  # Запрашиваемые разрешения
-            "https://www.googleapis.com/auth/drive",         # Доступ к Google Drive
-            "https://www.googleapis.com/auth/calendar",      # Доступ к Calendar
-            "openid",                                        # OpenID Connect
-            "profile",                                       # Профиль пользователя
-            "email",                                         # Email пользователя
-        ]),
-        "access_type": "offline",     # Для получения refresh_token
-        "state": random_state,        # CSRF защита
+        "response_type": "code",  # Тип ответа - код авторизации
+        "scope": " ".join(
+            [  # Запрашиваемые разрешения
+                "https://www.googleapis.com/auth/drive",  # Доступ к Google Drive
+                "https://www.googleapis.com/auth/calendar",  # Доступ к Calendar
+                "openid",  # OpenID Connect
+                "profile",  # Профиль пользователя
+                "email",  # Email пользователя
+            ]
+        ),
+        "access_type": "offline",  # Для получения refresh_token
+        "state": random_state,  # CSRF защита
     }
-    
+
     # Формируем URL для авторизации в Google
     query_string = urllib.parse.urlencode(query_params, quote_via=urllib.parse.quote)
     base_url = "https://accounts.google.com/o/oauth2/v2/auth"
     return f"{base_url}?{query_string}"
-
 ```
 
 **Что происходит:**
@@ -84,7 +85,6 @@ def generate_google_oauth_redirect_uri():
 def get_google_oauth_redirect_uri():
     uri = generate_google_oauth_redirect_uri()
     return RedirectResponse(url=uri, status_code=302)
-
 ```
 
 **Назначение:** Перенаправляет пользователя на Google для авторизации
@@ -94,35 +94,35 @@ def get_google_oauth_redirect_uri():
 ```python
 @router.post("/google/callback")
 async def handle_code(
-    code: Annotated[str, Body()],      # Код авторизации от Google
-    state: Annotated[str, Body()],     # State для проверки безопасности
+    code: Annotated[str, Body()],  # Код авторизации от Google
+    state: Annotated[str, Body()],  # State для проверки безопасности
 ):
     # 1. ПРОВЕРКА БЕЗОПАСНОСТИ
     if state not in state_storage:
         raise  # Неверный state - возможная CSRF атака
     else:
         print("Стейт корректный")
-    
+
     # 2. ОБМЕН КОДА НА ТОКЕНЫ
     google_token_url = "https://oauth2.googleapis.com/token"
-    
+
     async with aiohttp.ClientSession() as session:
         async with session.post(
             url=google_token_url,
             data={
                 "client_id": settings.OAUTH_GOOGLE_CLIENT_ID,
                 "client_secret": settings.OAUTH_GOOGLE_CLIENT_SECRET,  # Секретный ключ
-                "grant_type": "authorization_code",                   # Тип grant'а
-                "redirect_uri": "http://localhost:3000/auth/google",   # Тот же redirect_uri
-                "code": code,                                         # Полученный код
+                "grant_type": "authorization_code",  # Тип grant'а
+                "redirect_uri": "http://localhost:3000/auth/google",  # Тот же redirect_uri
+                "code": code,  # Полученный код
             },
             ssl=False,
         ) as response:
             res = await response.json()
             print(f"{res=}")
-            id_token = res["id_token"]        # JWT токен с данными пользователя
-            access_token = res["access_token"] # Токен для доступа к API
-            
+            id_token = res["id_token"]  # JWT токен с данными пользователя
+            access_token = res["access_token"]  # Токен для доступа к API
+
             # 3. ДЕКОДИРОВАНИЕ ДАННЫХ ПОЛЬЗОВАТЕЛЯ
             user_data = jwt.decode(
                 id_token,
@@ -145,10 +145,9 @@ async def handle_code(
 
     # 5. ВОЗВРАТ РЕЗУЛЬТАТА
     return {
-        "user": user_data,    # Данные пользователя из ID токена
-        "files": files,       # Список файлов из Google Drive
+        "user": user_data,  # Данные пользователя из ID токена
+        "files": files,  # Список файлов из Google Drive
     }
-
 ```
 
 **Что происходит:**
@@ -300,7 +299,6 @@ loginWithGoogle() {
 ```python
 random_state = secrets.token_urlsafe(16)
 state_storage.add(random_state)
-
 ```
 
 Защищает от CSRF атак - проверяем, что state вернулся тот же
@@ -318,7 +316,6 @@ state_storage.add(random_state)
 
 ```python
 jwt.decode(id_token, options={"verify_signature": False})
-
 ```
 
 ⚠️ **В продакшене нужно включить проверку подписи!**

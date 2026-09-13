@@ -78,7 +78,7 @@ Cookie: fastapiusersauth=<JWT>
 Сервис преобразует пользовательский текст в список сообщений OpenAI Chat Completions API:
 
 ```python
-messages=[
+messages = [
     {
         "role": "user",
         "content": "Hey ChatGPT, ..." + prompt,

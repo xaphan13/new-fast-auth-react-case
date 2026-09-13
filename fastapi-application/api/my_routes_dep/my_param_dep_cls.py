@@ -1,23 +1,20 @@
-from fastapi import (
-    Request,
-    Response,
-    APIRouter,
-    Depends,
-)
-
 from typing import Annotated
 
-from .dep_cls_schema import (
-    PathData,
-    QueryData,
-    HeaderData,
-    CookieData,
+from config_log import logF
+from fastapi import (
+    APIRouter,
+    Depends,
+    Request,
+    Response,
 )
 
+from .dep_cls_schema import (
+    CookieData,
+    HeaderData,
+    PathData,
+    QueryData,
+)
 from .pydantic_validator import RespAfterValid
-
-from config_log import logF
-
 
 router_param_dep_cls = APIRouter(tags=["My Parameters - Depends Class Annotated"])
 

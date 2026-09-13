@@ -1,11 +1,11 @@
+from typing import Annotated
+
 from fastapi import (
+    Cookie,
+    Header,
     Path,
     Query,
-    Header,
-    Cookie,
 )
-
-from typing import Annotated
 
 
 def get_item_id(

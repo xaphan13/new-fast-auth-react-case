@@ -1,25 +1,22 @@
 from __future__ import annotations
 
+from db_core.model_base import Base
+from db_core.type_for_models import (
+    int_primary_key,
+    str_len_50,
+    str_len_100,
+    time_stamp_utc,
+)
 from sqlalchemy import (
     Column,
+    ForeignKey,
     Integer,
     UniqueConstraint,
-    ForeignKey,
 )
-
 from sqlalchemy.orm import (
     Mapped,
     relationship,
 )
-
-from db_core.type_for_models import (
-    time_stamp_utc,
-    int_primary_key,
-    str_len_50,
-    str_len_100,
-)
-
-from db_core.model_base import Base
 
 
 class Order(Base):

@@ -40,9 +40,12 @@ cd fastapi-application && uvicorn main:main_app --port 8000
 
 ```python
 # 1) бандлы фронтенда
-main_app.mount("/assets",
+main_app.mount(
+    "/assets",
     StaticFiles(directory=BASE_DIR.parent / "frontend" / "dist" / "assets", check_dir=False),
-    name="spa_assets")
+    name="spa_assets",
+)
+
 
 # 2) catch-all: любой неизвестный GET-путь → index.html
 async def spa_fallback(request):
@@ -51,9 +54,12 @@ async def spa_fallback(request):
         return JSONResponse(status_code=404, content={"detail": "Not Found"})
     index_html = BASE_DIR.parent / "frontend" / "dist" / "index.html"
     if not index_html.is_file():
-        return JSONResponse(status_code=404,
-            content={"detail": "Frontend не собран: выполните npm run build в frontend/"})
+        return JSONResponse(
+            status_code=404,
+            content={"detail": "Frontend не собран: выполните npm run build в frontend/"},
+        )
     return FileResponse(index_html)
+
 
 main_app.router.routes.append(Route("/{full_path:path}", spa_fallback, methods=["GET"]))
 ```
@@ -81,7 +87,7 @@ CORS — это проверка *браузером*: разрешает ли �
 ```python
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://app.example.com"],   # не "*" при cookie-сессиях!
+    allow_origins=["https://app.example.com"],  # не "*" при cookie-сессиях!
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

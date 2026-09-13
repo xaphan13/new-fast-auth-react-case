@@ -1,16 +1,15 @@
 from typing import Annotated
 
 from fastapi import (
+    APIRouter,
     Depends,
     Header,
-    APIRouter,
 )
 
 from .func_deps import (
-    get_x_foo_bar,
     get_header_dependency,
+    get_x_foo_bar,
 )
-
 
 router_dep_simple = APIRouter()
 

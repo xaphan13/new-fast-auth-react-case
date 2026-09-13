@@ -9,14 +9,12 @@
 Секрет JWT — settings.web.secret_key (общий секретный ключ проекта).
 """
 
+from core.config import settings
 from fastapi_users.authentication import (
     AuthenticationBackend,
     CookieTransport,
 )
 from fastapi_users.authentication.strategy import JWTStrategy
-
-from core.config import settings
-
 
 cookie_transport = CookieTransport(
     cookie_name=settings.auth_users.cookie_name,

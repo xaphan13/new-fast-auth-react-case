@@ -21,44 +21,42 @@ auth_users.models импортируется лениво через from auth_u
 всегда к моменту загрузки auth_users).
 """
 
-
-from auth_users.models import User
-from auth_users.schemas import UserRead, UserCreate, UserUpdate
-from auth_users.user_manager import (
-    UserManager,
-    get_user_db,
-    get_user_manager,
-)
 from auth_users.auth_backend import (
     auth_backend,
     cookie_transport,
     get_jwt_strategy,
 )
 from auth_users.fastapi_users_obj import (
-    fastapi_users,
-    current_user,
     active_user,
+    current_user,
+    fastapi_users,
     optional_user,
     superuser_user,
 )
+from auth_users.models import User
 from auth_users.router import router
-
+from auth_users.schemas import UserCreate, UserRead, UserUpdate
+from auth_users.user_manager import (
+    UserManager,
+    get_user_db,
+    get_user_manager,
+)
 
 __all__ = [
     "User",
-    "UserRead",
     "UserCreate",
-    "UserUpdate",
     "UserManager",
-    "get_user_db",
-    "get_user_manager",
+    "UserRead",
+    "UserUpdate",
+    "active_user",
     "auth_backend",
     "cookie_transport",
-    "get_jwt_strategy",
-    "fastapi_users",
     "current_user",
-    "active_user",
+    "fastapi_users",
+    "get_jwt_strategy",
+    "get_user_db",
+    "get_user_manager",
     "optional_user",
-    "superuser_user",
     "router",
+    "superuser_user",
 ]

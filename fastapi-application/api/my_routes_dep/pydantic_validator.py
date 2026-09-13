@@ -1,12 +1,12 @@
-from pydantic import (
-    BaseModel,
-    Field,
-    AfterValidator,
-    field_validator,
-    ConfigDict,
-)
-
 from typing import Annotated
+
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+)
 
 
 # ========================================================= #

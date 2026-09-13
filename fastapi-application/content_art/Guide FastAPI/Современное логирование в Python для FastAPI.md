@@ -25,10 +25,10 @@
 LOGGING_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
-    "formatters": { ... },
-    "handlers": { ... },
-    "loggers": { ... },
-    "root": { ... }
+    "formatters": {...},
+    "handlers": {...},
+    "loggers": {...},
+    "root": {...},
 }
 ```  
 При использовании `dictConfig`, **необязательно** прописывать каждый логгер вручную — при отсутствии записи в `loggers` используется корневой логгер. Ключ `'()'` позволяет вызывать произвольную фабрику (например, `pythonjsonlogger.JsonFormatter`).  
@@ -72,7 +72,9 @@ from fastapi import FastAPI
 import logging.config
 
 app = FastAPI()
-LOG_CONFIG = { ... }
+LOG_CONFIG = {...}
+
+
 @app.on_event("startup")
 async def configure_logging():
     logging.config.dictConfig(LOG_CONFIG)
@@ -90,8 +92,7 @@ async def log_request(request: Request, call_next):
     response = await call_next(request)
     duration = time.perf_counter() - start
     logger.info(
-        f"{request.method} {request.url.path} "
-        f"status={response.status_code} time={duration:.3f}s"
+        f"{request.method} {request.url.path} status={response.status_code} time={duration:.3f}s"
     )
     return response
 ```  
@@ -105,18 +106,20 @@ async def log_request(request: Request, call_next):
 from contextvars import ContextVar
 import logging
 
-ctx_request = ContextVar('request')
-ctx_appname = ContextVar('appname')
+ctx_request = ContextVar("request")
+ctx_appname = ContextVar("appname")
+
 
 class InjectingFilter(logging.Filter):
     def __init__(self, app_name):
         super().__init__()
         self.app_name = app_name
+
     def filter(self, record):
         req = ctx_request.get()
         record.method = req.method
         record.ip = req.client.host
-        record.user = req.user or 'anonymous'
+        record.user = req.user or "anonymous"
         record.appName = ctx_appname.get()
         return True
 ```
@@ -258,11 +261,12 @@ root:
 import logging.config
 from fastapi import FastAPI
 
-LOG_CONFIG = { ... }  # как в примерах выше
+LOG_CONFIG = {...}  # как в примерах выше
 app = FastAPI()
 
 # Настраиваем логирование до старта
 logging.config.dictConfig(LOG_CONFIG)
+
 
 @app.get("/")
 async def hello():

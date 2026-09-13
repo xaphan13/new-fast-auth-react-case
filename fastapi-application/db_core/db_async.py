@@ -1,17 +1,15 @@
+from collections.abc import AsyncGenerator
+from typing import Annotated
+
+from core.config import SqliteDsn, settings
 from fastapi import Depends
-
 from sqlalchemy import event
-
 from sqlalchemy.ext.asyncio import (
-    create_async_engine,
     AsyncEngine,
-    async_sessionmaker,
     AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
 )
-
-from typing import AsyncGenerator, Annotated
-
-from core.config import settings, SqliteDsn
 
 
 class AsyncDbManager:

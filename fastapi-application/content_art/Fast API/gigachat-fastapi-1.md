@@ -116,10 +116,12 @@ from bot.handlers import setup_webhook
 
 app = FastAPI(title="Telegram Store", version="0.1.0")
 
+
 @app.on_event("startup")
 async def startup_event():
     await init_database()
     await setup_webhook(settings.WEBHOOK_URL)
+
 
 app.include_router(api_router, prefix="/api/v1")
 ```
@@ -133,6 +135,7 @@ app.include_router(api_router, prefix="/api/v1")
 ```python
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     DATABASE_URL: str
     MONGO_URI: str
@@ -142,6 +145,7 @@ class Settings(BaseSettings):
     WEBHOOK_URL: str
     SHOP_ID: str
     SECRET_KEY: str
+
 
 settings = Settings(_env_file=".env", _env_file_encoding="utf-8")
 ```
@@ -164,15 +168,19 @@ session_factory = async_sessionmaker(engine, expire_on_commit=False)
 mongo_client = AsyncIOMotorClient(settings.MONGO_URI)
 redis_client = aioredis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
+
 async def get_db() -> AsyncSession:
     async with session_factory() as session:
         yield session
 
+
 async def get_mongo_db():
     return mongo_client.telegram_store
 
+
 async def init_database():
     from api.models import Base
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 ```
@@ -190,6 +198,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
@@ -197,6 +206,7 @@ class User(Base):
     first_name = Column(String)
     last_name = Column(String)
     orders = relationship("Order", back_populates="user")
+
 
 class Product(Base):
     __tablename__ = "products"
@@ -206,12 +216,14 @@ class Product(Base):
     price = Column(Integer)
     stock_quantity = Column(Integer)
 
+
 class Order(Base):
     __tablename__ = "orders"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     user = relationship("User", back_populates="orders")
     items = relationship("OrderItem", back_populates="order")
+
 
 class OrderItem(Base):
     __tablename__ = "order_items"
@@ -232,11 +244,13 @@ Pydantic-схемы:
 ```python
 from pydantic import BaseModel
 
+
 class ProductBase(BaseModel):
     name: str
     description: str
     price: int
     stock_quantity: int
+
 
 class Product(ProductBase):
     id: int
@@ -244,8 +258,10 @@ class Product(ProductBase):
     class Config:
         orm_mode = True
 
+
 class OrderBase(BaseModel):
     user_id: int
+
 
 class Order(OrderBase):
     id: int
@@ -253,6 +269,7 @@ class Order(OrderBase):
 
     class Config:
         orm_mode = True
+
 
 class OrderItem(BaseModel):
     product_id: int
@@ -274,9 +291,11 @@ from api.models import Product as ProductModel
 
 router = APIRouter()
 
+
 @router.get("/products/", response_model=list[Product])
 async def read_products(db: Session = Depends(get_db)):
     return db.query(ProductModel).all()
+
 
 @router.post("/products/", response_model=Product)
 async def create_product(product: ProductBase, db: Session = Depends(get_db)):
@@ -300,9 +319,11 @@ from core.config import settings
 
 router = Router()
 
+
 @router.message(F.text.lower().contains("привет"))
 async def greet_user(message: Message):
     await message.reply(f"Привет, {message.from_user.full_name}!")
+
 
 @router.message(commands=["help"])
 async def help_command(message: Message):
@@ -319,6 +340,7 @@ async def help_command(message: Message):
 from aiogram.methods import SetWebhook
 from core.config import settings
 
+
 async def setup_webhook(webhook_url: str):
     await SetWebhook(url=webhook_url)
 ```
@@ -333,9 +355,12 @@ async def setup_webhook(webhook_url: str):
 from celery import Celery
 from core.config import settings
 
-celery_app = Celery('tasks', broker=settings.CELERY_BROKER_URL, backend=settings.CELERY_RESULT_BACKEND)
+celery_app = Celery(
+    "tasks", broker=settings.CELERY_BROKER_URL, backend=settings.CELERY_RESULT_BACKEND
+)
 
-@celery_app.task(name='process_order')
+
+@celery_app.task(name="process_order")
 def process_order(order_id: int):
     print(f"Processing order {order_id}")
 ```

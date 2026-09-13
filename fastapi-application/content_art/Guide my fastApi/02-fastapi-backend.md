@@ -25,6 +25,7 @@ from fastapi.responses import ORJSONResponse
 from core.config import settings, SqliteDsn
 from db_core.db_async import db_manager
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup
@@ -33,13 +34,14 @@ async def lifespan(app: FastAPI):
         logF.warning(f"used test sqlite dataBase : {settings.db.url=}")
     yield
     # shutdown
-    await db_manager.engine_dispose()          # закрываем пул соединений
+    await db_manager.engine_dispose()  # закрываем пул соединений
+
 
 def create_app(custom_docs_url: bool = False) -> FastAPI:
     docs_url, redoc_url = (None, None) if custom_docs_url else ("/docs", "/redoc")
     app = FastAPI(
         title="Example Request Parameters Extraction",
-        default_response_class=ORJSONResponse,   # orjson вместо stdlib json: быстрее
+        default_response_class=ORJSONResponse,  # orjson вместо stdlib json: быстрее
         lifespan=lifespan,
         docs_url=docs_url,
         redoc_url=redoc_url,
@@ -75,17 +77,18 @@ def create_app(custom_docs_url: bool = False) -> FastAPI:
 ```python
 main_app = create_app(custom_docs_url=False)
 
-main_app.include_router(router_api)        # /api/v1/...  (демо-часть)
-main_app.include_router(r_users_sql)       # /users/...
-main_app.include_router(r_order_one)       # /orders/...
+main_app.include_router(router_api)  # /api/v1/...  (демо-часть)
+main_app.include_router(r_users_sql)  # /users/...
+main_app.include_router(r_order_one)  # /orders/...
 
-register_md_articles(main_app)             # блог: middleware + mount /static + router_blog_api
+register_md_articles(main_app)  # блог: middleware + mount /static + router_blog_api
 
 main_app.mount(
     "/assets",
     StaticFiles(directory=BASE_DIR.parent / "frontend" / "dist" / "assets", check_dir=False),
     name="spa_assets",
 )
+
 
 # catch-all: строго после всех include_router и mount
 async def spa_fallback(request):
@@ -95,13 +98,14 @@ async def spa_fallback(request):
         return JSONResponse(status_code=404, content={"detail": "Not Found"})
     index_html = BASE_DIR.parent / "frontend" / "dist" / "index.html"
     if not index_html.is_file():
-        return JSONResponse(status_code=404,
-            content={"detail": "Frontend не собран: выполните npm run build в frontend/"})
+        return JSONResponse(
+            status_code=404,
+            content={"detail": "Frontend не собран: выполните npm run build в frontend/"},
+        )
     return FileResponse(index_html)
 
-main_app.router.routes.append(
-    Route("/{full_path:path}", spa_fallback, methods=["GET"])
-)
+
+main_app.router.routes.append(Route("/{full_path:path}", spa_fallback, methods=["GET"]))
 ```
 
 **Зачем catch-all?** React Router роутит на клиенте (`/art/Max/7`). Если
@@ -117,16 +121,16 @@ main_app.router.routes.append(
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(
-            BASE_DIR / "dev_sqlite.env",    # sqlite   ← активный профиль
+            BASE_DIR / "dev_sqlite.env",  # sqlite   ← активный профиль
             # BASE_DIR / "prod_db.env",  # postgres ← закомментирован
-            BASE_DIR / ".env",       # перекрывает оба
+            BASE_DIR / ".env",  # перекрывает оба
         ),
         case_sensitive=False,
         env_prefix="APP__",
         env_nested_delimiter="__",
     )
     api: ApiPrefix = ApiPrefix()
-    db: DatabaseConfig          # единственное обязательное поле
+    db: DatabaseConfig  # единственное обязательное поле
     run: RunConfig = RunConfig()
 ```
 
@@ -144,7 +148,7 @@ class Settings(BaseSettings):
 
 ```python
 r_users_sql = APIRouter(
-    prefix=settings.api.user_post_prefix,   # "/users"
+    prefix=settings.api.user_post_prefix,  # "/users"
     tags=["Sql example users"],
 )
 ```
@@ -159,6 +163,7 @@ r_users_sql = APIRouter(
 ```python
 # db_core/db_async.py
 CurrentSession = Annotated[AsyncSession, Depends(db_manager.get_async_session)]
+
 
 # обработчик — одна строка вместо ручного управления сессией
 @r_users_sql.get("/get_all_users", response_model=list[UserResp])
@@ -177,7 +182,9 @@ async def get_users(session: CurrentSession):
 def get_header_dependency(header_name: str, default_value: str = ""):
     def dependency(header: Annotated[str, Header(alias=header_name)] = default_value) -> str:
         return header
+
     return dependency
+
 
 # использование: своя зависимость под каждый заголовок
 Depends(get_header_dependency("X-Request-Source", default_value="web"))
@@ -187,12 +194,12 @@ Depends(get_header_dependency("X-Request-Source", default_value="web"))
 
 ```python
 class GreatService:
-    def __init__(self, token: Annotated[str, Header()]):   # параметры приходят из запроса
+    def __init__(self, token: Annotated[str, Header()]):  # параметры приходят из запроса
         self.token = token
 
+
 @app.get("/svc")
-async def svc(service: Annotated[GreatService, Depends(GreatService)]):
-    ...
+async def svc(service: Annotated[GreatService, Depends(GreatService)]): ...
 ```
 
 **Почему DI, а не просто вызывать функции внутри обработчика:**

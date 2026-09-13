@@ -10,14 +10,13 @@ md_articles/models.py::BlogUser; переиспользуемые Annotated-ти
 живут в db_core/type_for_models.py.
 """
 
-from datetime import datetime, timezone
-
-from fastapi_users.db import SQLAlchemyBaseUserTableUUID
-from sqlalchemy import DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from datetime import UTC, datetime, timezone
 
 from db_core.model_base import Base
 from db_core.type_for_models import str_len_20
+from fastapi_users.db import SQLAlchemyBaseUserTableUUID
+from sqlalchemy import DateTime
+from sqlalchemy.orm import Mapped, mapped_column
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
@@ -40,7 +39,7 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     def __repr__(self) -> str:

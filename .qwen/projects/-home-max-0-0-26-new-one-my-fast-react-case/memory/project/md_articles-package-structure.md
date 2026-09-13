@@ -28,8 +28,8 @@ type: project
 **Следствие для current_user + SessionMiddleware:** чтобы `request.session` работало в current_user middleware, добавлять нужно в порядке:
 
 ```python
-app.add_middleware(BaseHTTPMiddleware, dispatch=current_user_mw)   # раньше → внутри
-app.add_middleware(SessionMiddleware, ...)                          # позже  → снаружи
+app.add_middleware(BaseHTTPMiddleware, dispatch=current_user_mw)  # раньше → внутри
+app.add_middleware(SessionMiddleware, ...)  # позже  → снаружи
 ```
 
 Если перепутать порядок (как было в старом `__init__.py` через `app.middleware("http")(...)`), то `get_current_user` упадёт с `AssertionError: SessionMiddleware must be installed to access request.session`.

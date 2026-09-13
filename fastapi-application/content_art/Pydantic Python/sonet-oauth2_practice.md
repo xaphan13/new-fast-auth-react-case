@@ -17,7 +17,6 @@ from oauth_google import generate_google_oauth_redirect_uri
 from config import settings
 
 router = APIRouter(prefix="/auth")
-
 ```
 
 -   `APIRouter` создает группу маршрутов с общим префиксом `/auth`
@@ -32,7 +31,6 @@ router = APIRouter(prefix="/auth")
 def get_google_oauth_redirect_uri():
     uri = generate_google_oauth_redirect_uri()
     return RedirectResponse(url=uri, status_code=302)
-
 ```
 
 **Назначение:** Инициация процесса OAuth аутентификации
@@ -66,7 +64,6 @@ async def handle_code(
 ```python
 if state not in state_storage:
     raise Exception("Invalid state")
-
 ```
 
 -   Проверяет, что параметр `state` соответствует ранее сгенерированному
@@ -90,7 +87,6 @@ async with aiohttp.ClientSession() as session:
         res = await response.json()
         id_token = res["id_token"]
         access_token = res["access_token"]
-
 ```
 
 **Что происходит:**
@@ -108,7 +104,6 @@ user_data = jwt.decode(
     algorithms=["RS256"],
     options={"verify_signature": False},
 )
-
 ```
 
 -   Извлекает данные пользователя из ID токена
@@ -125,7 +120,6 @@ async with aiohttp.ClientSession() as session:
     ) as response:
         res = await response.json()
         files = [item["name"] for item in res["files"]]
-
 ```
 
 -   Использует `access_token` для запроса списка файлов из Google Drive
@@ -138,7 +132,6 @@ return {
     "user": user_data,
     "files": files,
 }
-
 ```
 
 ## Поток выполнения (OAuth 2.0 Flow)

@@ -20,7 +20,6 @@ from auth_users.auth_backend import auth_backend
 from auth_users.fastapi_users_obj import fastapi_users
 from auth_users.schemas import UserCreate, UserRead, UserUpdate
 
-
 auth_router = fastapi_users.get_auth_router(auth_backend)
 register_router = fastapi_users.get_register_router(UserRead, UserCreate)
 users_router = fastapi_users.get_users_router(UserRead, UserUpdate)

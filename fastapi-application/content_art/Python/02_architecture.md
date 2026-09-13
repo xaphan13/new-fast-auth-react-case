@@ -211,7 +211,7 @@ HTTP 200 + Set-Cookie → браузер → redirect to /chat
 ```python
 class Setting(BaseSettings):
     DATABASE_URL: str = "sqlite+aiosqlite:///./sqlite.db"
-    GITHUB_TOKEN: str = ""                          # обязательно для работы чата
+    GITHUB_TOKEN: str = ""  # обязательно для работы чата
     SECRET: str = "your-secret-key-change-this..."  # для JWT (опасный дефолт)
     DEBUG: bool = False
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)

@@ -14,7 +14,6 @@ from auth_users.auth_backend import auth_backend
 from auth_users.models import User
 from auth_users.user_manager import get_user_manager
 
-
 fastapi_users = FastAPIUsers[User, UUID](get_user_manager, [auth_backend])
 
 current_user = fastapi_users.current_user

@@ -1,30 +1,26 @@
+from collections.abc import Sequence
+
+from config_log import logF
+from core.config import settings
+from db_core.db_async import CurrentSession
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import Row
-from sqlalchemy.sql import select, Select, insert, Insert
-from sqlalchemy.orm import joinedload, InstrumentedAttribute
 from sqlalchemy.engine import Result
-from typing import Sequence
-
+from sqlalchemy.orm import InstrumentedAttribute, joinedload
+from sqlalchemy.sql import Insert, Select, insert, select
 from starlette import status
-
-from core.config import settings
-from .schema_order_product import (
-    OrderCreateBody,
-    OrderGetAllOrderbyQuery,
-    OrderResp,
-    OrderGetQuery,
-    OrderRespWithProducts,
-)
 
 from .model_order_product import (
     Order,
     Product,
 )
-
-from db_core.db_async import CurrentSession
-
-from config_log import logF
-
+from .schema_order_product import (
+    OrderCreateBody,
+    OrderGetAllOrderbyQuery,
+    OrderGetQuery,
+    OrderResp,
+    OrderRespWithProducts,
+)
 
 r_order_one = APIRouter(
     prefix=settings.api.order_product_prefix,

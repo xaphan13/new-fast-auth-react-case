@@ -1,17 +1,15 @@
+from config_log import logF
 from fastapi import (
+    APIRouter,
+    Cookie,
+    Header,
     Path,
     Query,
-    Header,
-    Cookie,
     Request,
     Response,
-    APIRouter,
 )
 
 from .pydantic_schema import RespFieldStyle
-
-from config_log import logF
-
 
 router_param_fast_cls_old = APIRouter(tags=["My Parameters - FastAPI Class Old"])
 
@@ -61,9 +59,7 @@ def fastapi_class_old(
     logF.info(f"fastapi_class_old 1 :\nclient={request.client} \napp.title='{request.app.title}'")
 
     logF.info(
-        "fastapi_class_old 2 :\nclient={request.client} \napp.title='{request.app.title}'".format(
-            request=request
-        )
+        f"fastapi_class_old 2 :\nclient={request.client} \napp.title='{request.app.title}'"
     )
 
     # Модифицируем Response (то, что уйдет клиенту)

@@ -1,8 +1,7 @@
-from sqlalchemy import MetaData
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import declared_attr
-
 from core.config import settings
+from sqlalchemy import MetaData
+from sqlalchemy.orm import DeclarativeBase, declared_attr
+
 from db_core.case_converter import camel_case_to_snake_case
 
 

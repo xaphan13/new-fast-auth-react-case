@@ -22,12 +22,13 @@ class UserCreate(BaseModel):
     surname: str
     password: str
 
+
 class UserResp(BaseModel):
     id: int
     nickname: str
     firstname: str
     surname: str
-    model_config = ConfigDict(from_attributes=True)   # читаем из ORM-объектов
+    model_config = ConfigDict(from_attributes=True)  # читаем из ORM-объектов
 ```
 
 **Почему раздельные:** `UserResp` не содержит `password` — пароль физически не
@@ -48,9 +49,11 @@ r_users_sql = APIRouter(
     tags=["Sql example users"],
 )
 
+
 @r_users_sql.get("/get_all_users", response_model=list[UserResp])
 async def get_users(session: CurrentSession):
     return await users_crud.get_all_users(session=session)
+
 
 @r_users_sql.post("/create_user", response_model=UserResp)
 async def create_user(
@@ -97,8 +100,7 @@ OrderResp                                  базовая: только поля
 
 ```python
 if existing_order:
-    raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                        detail="Order already exists")
+    raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Order already exists")
 ```
 
 **Типичный дефект, который стоит проверить в своём API:** дубликат уникального
@@ -115,7 +117,7 @@ if existing_order:
 Префиксы версий — часть конфига, а не хардкод:
 
 ```python
-router_api = APIRouter(prefix=settings.api.prefix)        # "/api"
+router_api = APIRouter(prefix=settings.api.prefix)  # "/api"
 router_api_v1 = APIRouter(prefix=settings.api.v1.prefix)  # "/v1"
 router_api.include_router(router_api_v1)
 ```

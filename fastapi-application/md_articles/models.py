@@ -1,7 +1,4 @@
-from datetime import datetime, timezone
-
-from sqlalchemy import ForeignKey, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from datetime import UTC, datetime, timezone
 
 from db_core.model_base import Base
 from db_core.type_for_models import (
@@ -11,6 +8,8 @@ from db_core.type_for_models import (
     str_len_100,
     str_len_120,
 )
+from sqlalchemy import ForeignKey, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class BlogUser(Base):
@@ -51,7 +50,7 @@ class BlogPost(Base):
     title: Mapped[str_len_100] = mapped_column(nullable=False)
     date_posted: Mapped[datetime] = mapped_column(
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
     user_id: Mapped[int] = mapped_column(

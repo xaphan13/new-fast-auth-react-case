@@ -88,6 +88,7 @@ app/core/logging.py
 import logging
 import sys
 
+
 def setup_logging():
     fmt = "%(asctime)s %(levelname)s %(name)s %(message)s"
     logging.basicConfig(level=logging.INFO, stream=sys.stdout, format=fmt)
@@ -123,6 +124,7 @@ app/models/base.py
 ```python
 from sqlalchemy.orm import DeclarativeBase
 
+
 class Base(DeclarativeBase):
     pass
 ```
@@ -132,6 +134,7 @@ app/models/item.py
 from sqlalchemy import String, Integer, Boolean, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
+
 
 class Item(Base):
     __tablename__ = "items"
@@ -143,7 +146,9 @@ class Item(Base):
     price_currency: Mapped[str] = mapped_column(String(3), default="RUB")
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 ```
 
 app/models/customer.py
@@ -151,6 +156,7 @@ app/models/customer.py
 from sqlalchemy import String, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
+
 
 class Customer(Base):
     __tablename__ = "customers"
@@ -168,9 +174,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 
 OrderStatusEnum = Enum(
-    "draft", "pending_payment", "paid", "cancelled", "fulfilled",
+    "draft",
+    "pending_payment",
+    "paid",
+    "cancelled",
+    "fulfilled",
     name="order_status",
 )
+
 
 class Order(Base):
     __tablename__ = "orders"
@@ -180,9 +191,14 @@ class Order(Base):
     total_amount: Mapped[int] = mapped_column(Integer)
     currency: Mapped[str] = mapped_column(String(3), default="RUB")
     created_at: Mapped = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
-    items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+    items: Mapped[list["OrderItem"]] = relationship(
+        back_populates="order", cascade="all, delete-orphan"
+    )
+
 
 class OrderItem(Base):
     __tablename__ = "order_items"
@@ -191,7 +207,7 @@ class OrderItem(Base):
     item_id: Mapped[int] = mapped_column(ForeignKey("items.id"))
     qty: Mapped[int]
     unit_price: Mapped[int]  # копейки
-    subtotal: Mapped[int]    # копейки
+    subtotal: Mapped[int]  # копейки
 
     order: Mapped["Order"] = relationship(back_populates="items")
 ```
@@ -203,9 +219,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
 
 PaymentStatusEnum = Enum(
-    "pending", "succeeded", "canceled",
+    "pending",
+    "succeeded",
+    "canceled",
     name="payment_status",
 )
+
 
 class Payment(Base):
     __tablename__ = "payments"
@@ -219,12 +238,15 @@ class Payment(Base):
     idempotency_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    __table_args__ = (UniqueConstraint("provider", "provider_payment_id", name="uq_provider_payment"),)
+    __table_args__ = (
+        UniqueConstraint("provider", "provider_payment_id", name="uq_provider_payment"),
+    )
 ```
 
 app/schemas/item.py
 ```python
 from pydantic import BaseModel, Field
+
 
 class ItemCreate(BaseModel):
     sku: str = Field(..., max_length=64)
@@ -234,12 +256,14 @@ class ItemCreate(BaseModel):
     price_currency: str = "RUB"
     active: bool = True
 
+
 class ItemUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     price_amount: int | None = None
     price_currency: str | None = None
     active: bool | None = None
+
 
 class ItemOut(BaseModel):
     id: int
@@ -254,6 +278,7 @@ class ItemOut(BaseModel):
 app/schemas/order.py
 ```python
 from pydantic import BaseModel
+
 
 class OrderOut(BaseModel):
     id: int
@@ -279,9 +304,11 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
+
 @router.get("/live")
 async def live():
     return {"status": "live"}
+
 
 @router.get("/ready")
 async def ready():
@@ -299,14 +326,21 @@ from app.schemas.item import ItemCreate, ItemUpdate, ItemOut
 
 router = APIRouter()
 
+
 async def get_session() -> AsyncSession:
     async with SessionLocal() as session:
         yield session
 
+
 @router.get("/", response_model=list[ItemOut])
 async def list_items(session: AsyncSession = Depends(get_session)):
-    rows = (await session.execute(select(Item).where(Item.active == True).order_by(Item.id))).scalars().all()
+    rows = (
+        (await session.execute(select(Item).where(Item.active == True).order_by(Item.id)))
+        .scalars()
+        .all()
+    )
     return [ItemOut.model_validate(r.__dict__) for r in rows]
+
 
 @router.post("/", response_model=ItemOut)
 async def create_item(payload: ItemCreate, session: AsyncSession = Depends(get_session)):
@@ -316,8 +350,11 @@ async def create_item(payload: ItemCreate, session: AsyncSession = Depends(get_s
     await session.refresh(item)
     return ItemOut.model_validate(item.__dict__)
 
+
 @router.patch("/{item_id}", response_model=ItemOut)
-async def update_item(item_id: int, payload: ItemUpdate, session: AsyncSession = Depends(get_session)):
+async def update_item(
+    item_id: int, payload: ItemUpdate, session: AsyncSession = Depends(get_session)
+):
     q = await session.execute(select(Item).where(Item.id == item_id))
     item = q.scalar_one_or_none()
     if not item:
@@ -340,9 +377,11 @@ from app.schemas.order import OrderOut
 
 router = APIRouter()
 
+
 async def get_session() -> AsyncSession:
     async with SessionLocal() as session:
         yield session
+
 
 @router.get("/{order_id}", response_model=OrderOut)
 async def get_order(order_id: int, session: AsyncSession = Depends(get_session)):
@@ -350,7 +389,9 @@ async def get_order(order_id: int, session: AsyncSession = Depends(get_session))
     o = q.scalar_one_or_none()
     if not o:
         raise HTTPException(404, "Order not found")
-    return OrderOut.model_validate({"id": o.id, "status": o.status, "total_amount": o.total_amount, "currency": o.currency})
+    return OrderOut.model_validate(
+        {"id": o.id, "status": o.status, "total_amount": o.total_amount, "currency": o.currency}
+    )
 ```
 
 app/services/inventory.py
@@ -369,7 +410,10 @@ from app.core.config import settings
 Configuration.account_id = settings.YOOKASSA_SHOP_ID
 Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
 
-def create_payment_rub(amount_rub: str, description: str, return_url: str, metadata: dict, idem_key: str | None = None):
+
+def create_payment_rub(
+    amount_rub: str, description: str, return_url: str, metadata: dict, idem_key: str | None = None
+):
     payload = {
         "amount": {"value": amount_rub, "currency": "RUB"},
         "confirmation": {"type": "redirect", "return_url": return_url},
@@ -378,6 +422,7 @@ def create_payment_rub(amount_rub: str, description: str, return_url: str, metad
         "metadata": metadata,
     }
     return Payment.create(payload, idempotency_key=idem_key or str(uuid4()))
+
 
 def get_payment(payment_id: str):
     return Payment.find_one(payment_id)
@@ -411,14 +456,18 @@ router = Router()
 
 CATALOG_PAGE_SIZE = 10
 
+
 def kopecks_to_rub_str(value: int) -> str:
-    return f"{value/100:.2f}"
+    return f"{value / 100:.2f}"
+
 
 @router.message(F.text == "/start")
 async def start(message: Message):
     # Зарегистрируем пользователя при первом заходе
     async with SessionLocal() as session:
-        q = await session.execute(select(Customer).where(Customer.tg_user_id == message.from_user.id))
+        q = await session.execute(
+            select(Customer).where(Customer.tg_user_id == message.from_user.id)
+        )
         customer = q.scalar_one_or_none()
         if not customer:
             customer = Customer(
@@ -427,34 +476,52 @@ async def start(message: Message):
             )
             session.add(customer)
             await session.commit()
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Открыть каталог", callback_data="catalog:0")],
-        [InlineKeyboardButton(text="Корзина", callback_data="cart")],
-    ])
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Открыть каталог", callback_data="catalog:0")],
+            [InlineKeyboardButton(text="Корзина", callback_data="cart")],
+        ]
+    )
     await message.answer("Добро пожаловать в магазин! Выберите действие:", reply_markup=kb)
+
 
 @router.callback_query(F.data.startswith("catalog:"))
 async def show_catalog(cb: CallbackQuery):
     page = int(cb.data.split(":")[1])
     offset = page * CATALOG_PAGE_SIZE
     async with SessionLocal() as session:
-        rows = (await session.execute(
-            select(Item).where(Item.active == True).order_by(Item.id).offset(offset).limit(CATALOG_PAGE_SIZE)
-        )).scalars().all()
+        rows = (
+            (
+                await session.execute(
+                    select(Item)
+                    .where(Item.active == True)
+                    .order_by(Item.id)
+                    .offset(offset)
+                    .limit(CATALOG_PAGE_SIZE)
+                )
+            )
+            .scalars()
+            .all()
+        )
     if not rows:
         await cb.message.edit_text("Каталог пуст.")
         await cb.answer()
         return
     lines = [f"{i.id}. <b>{i.title}</b> — {kopecks_to_rub_str(i.price_amount)} ₽" for i in rows]
-    buttons = [[InlineKeyboardButton(text=f"Добавить {i.id}", callback_data=f"add:{i.id}")] for i in rows]
+    buttons = [
+        [InlineKeyboardButton(text=f"Добавить {i.id}", callback_data=f"add:{i.id}")] for i in rows
+    ]
     nav = []
     if page > 0:
-        nav.append(InlineKeyboardButton(text="« Назад", callback_data=f"catalog:{page-1}"))
+        nav.append(InlineKeyboardButton(text="« Назад", callback_data=f"catalog:{page - 1}"))
     nav.append(InlineKeyboardButton(text="Корзина 🧺", callback_data="cart"))
-    nav.append(InlineKeyboardButton(text="Вперёд »", callback_data=f"catalog:{page+1}"))
+    nav.append(InlineKeyboardButton(text="Вперёд »", callback_data=f"catalog:{page + 1}"))
     buttons.append(nav)
-    await cb.message.edit_text("\n".join(lines), reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons))
+    await cb.message.edit_text(
+        "\n".join(lines), reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons)
+    )
     await cb.answer()
+
 
 @router.callback_query(F.data.startswith("add:"))
 async def add_to_cart(cb: CallbackQuery):
@@ -462,6 +529,7 @@ async def add_to_cart(cb: CallbackQuery):
     key = f"cart:{cb.from_user.id}"
     await redis_client.hincrby(key, str(item_id), 1)
     await cb.answer("Добавлено в корзину ✅", show_alert=False)
+
 
 @router.callback_query(F.data == "cart")
 async def show_cart(cb: CallbackQuery):
@@ -482,12 +550,15 @@ async def show_cart(cb: CallbackQuery):
         totals += subtotal
         lines.append(f"{it.title} × {qty} = {kopecks_to_rub_str(subtotal)} ₽")
     lines.append(f"\nИтого: <b>{kopecks_to_rub_str(totals)} ₽</b>")
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Оформить заказ и оплатить", callback_data="checkout")],
-        [InlineKeyboardButton(text="Назад в каталог", callback_data="catalog:0")],
-    ])
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Оформить заказ и оплатить", callback_data="checkout")],
+            [InlineKeyboardButton(text="Назад в каталог", callback_data="catalog:0")],
+        ]
+    )
     await cb.message.edit_text("\n".join(lines), reply_markup=kb)
     await cb.answer()
+
 
 @router.callback_query(F.data == "checkout")
 async def checkout(cb: CallbackQuery):
@@ -523,18 +594,28 @@ async def checkout(cb: CallbackQuery):
             total += subtotal
 
         # create order
-        order = Order(customer_id=customer.id, status="pending_payment", total_amount=total, currency="RUB")
+        order = Order(
+            customer_id=customer.id, status="pending_payment", total_amount=total, currency="RUB"
+        )
         session.add(order)
         await session.flush()  # get order.id
 
         # items
-        for (item_id, qty, unit_price, subtotal) in order_items:
-            session.add(OrderItem(order_id=order.id, item_id=item_id, qty=qty, unit_price=unit_price, subtotal=subtotal))
+        for item_id, qty, unit_price, subtotal in order_items:
+            session.add(
+                OrderItem(
+                    order_id=order.id,
+                    item_id=item_id,
+                    qty=qty,
+                    unit_price=unit_price,
+                    subtotal=subtotal,
+                )
+            )
 
         await session.commit()
 
     # create payment via YooKassa
-    amount_str = f"{total/100:.2f}"
+    amount_str = f"{total / 100:.2f}"
     return_url = f"{settings.PUBLIC_BASE_URL}/thanks?order_id={order.id}"
     meta = {"order_id": order.id, "tg_user_id": cb.from_user.id}
     yp = yookassa.create_payment_rub(
@@ -584,6 +665,7 @@ import httpx
 from app.core.config import settings
 from app.workers.celery_app import celery
 
+
 @celery.task(bind=True, max_retries=5, autoretry_for=(Exception,), retry_backoff=True)
 def send_message(self, chat_id: int, text: str):
     url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage"
@@ -623,6 +705,7 @@ app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 # Подключаем Telegram-роутер к aiogram
 dp.include_router(tg_router)
 
+
 @app.post("/tg/webhook")
 async def tg_webhook(request: Request):
     secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
@@ -632,6 +715,7 @@ async def tg_webhook(request: Request):
     update = Update.model_validate(data)
     await dp.feed_update(bot, update)
     return {"ok": True}
+
 
 @app.post("/webhooks/yookassa")
 async def yookassa_webhook(request: Request):
@@ -683,12 +767,15 @@ async def yookassa_webhook(request: Request):
 
             # Уведомим пользователя
             if tg_user_id:
-                send_message.delay(int(tg_user_id), f"Оплата по заказу #{order_id} прошла успешно ✅")
+                send_message.delay(
+                    int(tg_user_id), f"Оплата по заказу #{order_id} прошла успешно ✅"
+                )
         elif status == "canceled":
             payment.status = "canceled"
             await session.commit()
 
     return {"ok": True}
+
 
 @app.get("/")
 async def root():
@@ -721,6 +808,7 @@ fileConfig(config.config_file_name)  # type: ignore
 
 target_metadata = Base.metadata
 
+
 def run_migrations_offline() -> None:
     url = settings.POSTGRES_DSN
     context.configure(
@@ -732,6 +820,7 @@ def run_migrations_offline() -> None:
     )
     with context.begin_transaction():
         context.run_migrations()
+
 
 def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section)
@@ -754,6 +843,7 @@ def run_migrations_online() -> None:
         with context.begin_transaction():
             context.run_migrations()
 
+
 if context.is_offline_mode():
     run_migrations_offline()
 else:
@@ -765,10 +855,11 @@ migrations/versions/0001_init.py
 """init schema
 
 Revision ID: 0001_init
-Revises: 
+Revises:
 Create Date: 2025-08-13
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -806,12 +897,19 @@ def upgrade() -> None:
     op.create_index("ix_items_sku", "items", ["sku"], unique=True)
     op.create_index("ix_items_active", "items", ["active"], unique=False)
 
-    op.execute("CREATE TYPE order_status AS ENUM ('draft','pending_payment','paid','cancelled','fulfilled');")
+    op.execute(
+        "CREATE TYPE order_status AS ENUM ('draft','pending_payment','paid','cancelled','fulfilled');"
+    )
     op.create_table(
         "orders",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("customer_id", sa.Integer(), sa.ForeignKey("customers.id", ondelete=None)),
-        sa.Column("status", sa.Enum(name="order_status", create_type=False), nullable=False, server_default="pending_payment"),
+        sa.Column(
+            "status",
+            sa.Enum(name="order_status", create_type=False),
+            nullable=False,
+            server_default="pending_payment",
+        ),
         sa.Column("total_amount", sa.Integer(), nullable=False),
         sa.Column("currency", sa.String(length=3), nullable=False, server_default="RUB"),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()")),
@@ -836,14 +934,21 @@ def upgrade() -> None:
         sa.Column("order_id", sa.Integer(), sa.ForeignKey("orders.id", ondelete="CASCADE")),
         sa.Column("provider", sa.String(length=32), nullable=False, server_default="yookassa"),
         sa.Column("provider_payment_id", sa.String(length=128), nullable=False),
-        sa.Column("status", sa.Enum(name="payment_status", create_type=False), nullable=False, server_default="pending"),
+        sa.Column(
+            "status",
+            sa.Enum(name="payment_status", create_type=False),
+            nullable=False,
+            server_default="pending",
+        ),
         sa.Column("amount", sa.Integer(), nullable=False),
         sa.Column("currency", sa.String(length=3), nullable=False, server_default="RUB"),
         sa.Column("idempotency_key", sa.String(length=128), nullable=True),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), server_default=sa.text("now()")),
         sa.UniqueConstraint("provider", "provider_payment_id", name="uq_provider_payment"),
     )
-    op.create_index("ix_payments_provider_payment_id", "payments", ["provider_payment_id"], unique=True)
+    op.create_index(
+        "ix_payments_provider_payment_id", "payments", ["provider_payment_id"], unique=True
+    )
     op.create_index("ix_payments_status", "payments", ["status"], unique=False)
 
 

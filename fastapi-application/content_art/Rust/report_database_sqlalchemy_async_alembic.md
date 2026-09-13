@@ -267,9 +267,7 @@ class Post(Base):
         # Сохраняем существующий GENERATED ALWAYS вручную через DDL или Alembic
     )
 
-    tags: Mapped[List["Tag"]] = relationship(
-        "Tag", secondary=post_tags, back_populates="posts"
-    )
+    tags: Mapped[List["Tag"]] = relationship("Tag", secondary=post_tags, back_populates="posts")
 
     __table_args__ = (
         Index("posts_search_idx", "search_vector", postgresql_using="gin"),
@@ -336,7 +334,9 @@ class PostRepository:
 
     async def list_published(self, limit: int, offset: int):
         stmt = (
-            select(Post.id, Post.slug, Post.title, Post.summary, Post.cover_image, Post.published_at)
+            select(
+                Post.id, Post.slug, Post.title, Post.summary, Post.cover_image, Post.published_at
+            )
             .where(Post.published.is_(True))
             .order_by(Post.published_at.desc())
             .limit(limit)
@@ -374,6 +374,7 @@ from app.database import get_db
 from app.repositories.posts import PostRepository
 
 router = APIRouter()
+
 
 @router.get("/")
 async def home(request: Request, db: AsyncSession = Depends(get_db)):
@@ -460,6 +461,7 @@ import pytest_asyncio
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 TEST_DB_URL = "postgresql+asyncpg://test:test@localhost:5433/test"
+
 
 @pytest_asyncio.fixture
 async def db():

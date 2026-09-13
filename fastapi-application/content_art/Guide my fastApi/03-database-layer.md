@@ -64,6 +64,7 @@ async def get_async_session(self) -> AsyncGenerator[AsyncSession, None]:
             await session.rollback()
             raise
 
+
 CurrentSession = Annotated[AsyncSession, Depends(db_manager.get_async_session)]
 ```
 
@@ -86,11 +87,15 @@ CurrentSession = Annotated[AsyncSession, Depends(db_manager.get_async_session)]
 
 ```python
 int_primary_key = Annotated[int, mapped_column(primary_key=True, index=True)]
-time_stamp_utc  = Annotated[datetime, mapped_column(
-                    DateTime(timezone=True),
-                    default=lambda: datetime.now(timezone.utc),
-                    server_default=func.now())]
-str_len_100     = Annotated[str, mapped_column(String(100))]
+time_stamp_utc = Annotated[
+    datetime,
+    mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        server_default=func.now(),
+    ),
+]
+str_len_100 = Annotated[str, mapped_column(String(100))]
 ```
 
 **Модель домена** (many-to-many через явную ассоциативную модель — так делают,
@@ -98,10 +103,10 @@ str_len_100     = Annotated[str, mapped_column(String(100))]
 
 ```python
 class OrderProductAssociation(Base):
-    __tablename__ = "order_product_association"   # имя задано явно: конвенция сломалась бы
-    order_id:   Mapped[int] = mapped_column(ForeignKey("orders.id"), primary_key=True)
+    __tablename__ = "order_product_association"  # имя задано явно: конвенция сломалась бы
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), primary_key=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), primary_key=True)
-    count:      Mapped[int] = mapped_column(default=1)
+    count: Mapped[int] = mapped_column(default=1)
 ```
 
 **Convention over configuration**: `Base` сам генерирует `__tablename__` из имени
@@ -120,10 +125,11 @@ async def get_all_users(session: AsyncSession) -> Sequence[User]:
     result = await session.execute(stmt)
     return result.scalars().all()
 
+
 async def create_user(session: AsyncSession, user_create: UserCreate) -> User:
     user = User(**user_create.model_dump())
     session.add(user)
-    await session.commit()       # транзакция фиксируется здесь
+    await session.commit()  # транзакция фиксируется здесь
     await session.refresh(user)  # дочитываем id и server_default
     return user
 ```
@@ -165,11 +171,11 @@ cd fastapi-application
 ```python
 stmt = (
     select(Order)
-    .options(joinedload(Order.products))     # LEFT JOIN, один SQL-запрос
+    .options(joinedload(Order.products))  # LEFT JOIN, один SQL-запрос
     .order_by(Order.id)
 )
 result = await session.execute(stmt)
-orders = result.unique().scalars().all()     # .unique() ОБЯЗАТЕЛЬЕН при joinedload на коллекцию
+orders = result.unique().scalars().all()  # .unique() ОБЯЗАТЕЛЬЕН при joinedload на коллекцию
 ```
 
 `.unique()` нужен потому, что JOIN размножает строки заказа по товарам; без него

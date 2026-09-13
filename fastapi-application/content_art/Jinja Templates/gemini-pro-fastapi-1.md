@@ -309,7 +309,9 @@ router = APIRouter()
 
 
 @router.post("/yookassa")
-async def yookassa_webhook(notification: YooKassaNotification, db: AsyncSession = Depends(get_async_db)):
+async def yookassa_webhook(
+    notification: YooKassaNotification, db: AsyncSession = Depends(get_async_db)
+):
     await logs_collection.insert_one(notification.model_dump())
 
     if notification.event == "payment.succeeded":
@@ -492,12 +494,16 @@ def send_product_task(order_id: int):
             sa.Column("id", sa.Integer(), nullable=False),
             sa.Column("product_id", sa.Integer(), nullable=False),
             sa.Column("telegram_user_id", sa.Integer(), nullable=False),
-            sa.Column("status", sa.Enum("PENDING", "COMPLETED", "FAILED", name="orderstatus"), nullable=False),
+            sa.Column(
+                "status", sa.Enum("PENDING", "COMPLETED", "FAILED", name="orderstatus"), nullable=False
+            ),
             sa.Column("yookassa_payment_id", sa.String(), nullable=True),
             sa.PrimaryKeyConstraint("id"),
             sa.UniqueConstraint("yookassa_payment_id"),
         )
-        op.create_index(op.f("ix_orders_telegram_user_id"), "orders", ["telegram_user_id"], unique=False)
+        op.create_index(
+            op.f("ix_orders_telegram_user_id"), "orders", ["telegram_user_id"], unique=False
+        )
         # ### end Alembic commands ###
 
 

@@ -1,15 +1,14 @@
 from __future__ import annotations
+
+from datetime import UTC, datetime, timezone
 from typing import Annotated
-from datetime import datetime, timezone
 
 from sqlalchemy import (
-    String,
     DateTime,
+    String,
     func,
 )
-
 from sqlalchemy.orm import mapped_column
-
 
 int_primary_key = Annotated[
     int,
@@ -24,7 +23,7 @@ time_stamp_utc = Annotated[
     datetime,
     mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         server_default=func.now(),
     ),
 ]

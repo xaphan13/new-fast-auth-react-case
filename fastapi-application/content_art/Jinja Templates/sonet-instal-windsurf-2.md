@@ -185,21 +185,21 @@ def main():
     Главная функция программы
     """
     print("Hello, Windsurf IDE!")
-    
+
     # Пример работы с переменными
     name = input("Введите ваше имя: ")
     age = int(input("Введите ваш возраст: "))
-    
+
     print(f"Привет, {name}! Вам {age} лет.")
-    
+
     # Пример работы со списками
     numbers = [1, 2, 3, 4, 5]
     squared = [x**2 for x in numbers]
     print(f"Квадраты чисел: {squared}")
 
+
 if __name__ == "__main__":
     main()
-
 ```
 
 ### 2. Использование AI-помощника
@@ -436,20 +436,21 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class DataProcessor:
     """Класс для обработки данных."""
-    
+
     def __init__(self, config: Dict[str, any]) -> None:
         self.config = config
         logger.info("DataProcessor initialized")
-    
+
     def process_data(self, data: List[Dict]) -> List[Dict]:
         """
         Обрабатывает список данных.
-        
+
         Args:
             data: Список словарей для обработки
-            
+
         Returns:
             Обработанный список данных
         """
@@ -458,14 +459,13 @@ class DataProcessor:
             # Обработка элемента
             processed_item = self._process_item(item)
             processed.append(processed_item)
-        
+
         logger.info(f"Processed {len(processed)} items")
         return processed
-    
+
     def _process_item(self, item: Dict) -> Dict:
         """Приватный метод для обработки одного элемента."""
-        return {**item, 'processed': True}
-
+        return {**item, "processed": True}
 ```
 
 ## Заключение

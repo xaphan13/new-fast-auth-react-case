@@ -1,11 +1,9 @@
-from base_dir_path import BASE_DIR
-from pathlib import Path
-
 import logging.config
 import os
+from pathlib import Path
 
 import yaml
-
+from base_dir_path import BASE_DIR
 
 # Дефолты пути и имени файла лога — единое место для всего модуля.
 DEFAULT_LOG_DIR: str = "./log"

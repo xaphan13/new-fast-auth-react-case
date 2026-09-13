@@ -1,23 +1,20 @@
+from typing import Annotated
+
+from config_log import logF
 from fastapi import (
-    Request,
-    Response,
     APIRouter,
     Depends,
+    Request,
+    Response,
 )
-
-from typing import Annotated
 
 from .dep_func_schema import (
     get_item_id,
+    get_number_req,
     get_param_id,
     get_user_id,
-    get_number_req,
 )
-
 from .pydantic_validator import RespDecorValid
-
-from config_log import logF
-
 
 router_param_dep_func = APIRouter(tags=["My Parameters - Depends Functions Annotated"])
 

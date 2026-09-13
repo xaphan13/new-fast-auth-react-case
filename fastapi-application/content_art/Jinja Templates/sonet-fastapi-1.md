@@ -223,36 +223,38 @@ from pydantic_settings import BaseSettings
 from pydantic import Field
 from typing import Optional
 
+
 class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = Field(..., env="DATABASE_URL")
-    
+
     # Redis
     REDIS_URL: str = Field(..., env="REDIS_URL")
-    
+
     # Security
     SECRET_KEY: str = Field(..., env="SECRET_KEY")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    
+
     # Telegram
     TELEGRAM_BOT_TOKEN: str = Field(..., env="TELEGRAM_BOT_TOKEN")
     TELEGRAM_WEBHOOK_URL: Optional[str] = Field(None, env="TELEGRAM_WEBHOOK_URL")
-    
+
     # YuKassa
     YUKASSA_SHOP_ID: str = Field(..., env="YUKASSA_SHOP_ID")
     YUKASSA_SECRET_KEY: str = Field(..., env="YUKASSA_SECRET_KEY")
-    
+
     # Admin
     ADMIN_USERNAME: str = Field(..., env="ADMIN_USERNAME")
     ADMIN_PASSWORD: str = Field(..., env="ADMIN_PASSWORD")
-    
+
     # File upload
     UPLOAD_DIR: str = "uploads"
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
-    
+
     class Config:
         env_file = ".env"
+
 
 settings = Settings()
 ```
@@ -270,17 +272,16 @@ engine = create_async_engine(
     pool_pre_ping=True,
 )
 
-AsyncSessionLocal = async_sessionmaker(
-    engine, 
-    class_=AsyncSession, 
-    expire_on_commit=False
-)
+AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
 
 class Base(DeclarativeBase):
     pass
 
+
 # Redis
 redis_client = redis.from_url(settings.REDIS_URL)
+
 
 # Dependency
 async def get_db():
@@ -289,6 +290,7 @@ async def get_db():
             yield session
         finally:
             await session.close()
+
 
 async def get_redis():
     return redis_client
@@ -301,9 +303,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
 
+
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     telegram_id = Column(BigInteger, unique=True, index=True, nullable=False)
     username = Column(String, nullable=True)
@@ -315,7 +318,7 @@ class User(Base):
     is_admin = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     orders = relationship("Order", back_populates="user")
 ```
 
@@ -326,20 +329,22 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
 
+
 class Category(Base):
     __tablename__ = "categories"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, index=True)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     products = relationship("Product", back_populates="category")
+
 
 class Product(Base):
     __tablename__ = "products"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False, index=True)
     description = Column(Text, nullable=True)
@@ -352,7 +357,7 @@ class Product(Base):
     is_featured = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     category = relationship("Category", back_populates="products")
     order_items = relationship("OrderItem", back_populates="product")
 ```
@@ -364,32 +369,36 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
 
+
 class Order(Base):
     __tablename__ = "orders"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    status = Column(String, default="pending")  # pending, paid, processing, shipped, delivered, cancelled
+    status = Column(
+        String, default="pending"
+    )  # pending, paid, processing, shipped, delivered, cancelled
     total_amount = Column(Float, nullable=False)
     delivery_address = Column(Text, nullable=True)
     phone = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     user = relationship("User", back_populates="orders")
     items = relationship("OrderItem", back_populates="order")
     payment = relationship("Payment", back_populates="order", uselist=False)
 
+
 class OrderItem(Base):
     __tablename__ = "order_items"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"))
     product_id = Column(Integer, ForeignKey("products.id"))
     quantity = Column(Integer, nullable=False)
     price = Column(Float, nullable=False)  # Price at time of order
-    
+
     order = relationship("Order", back_populates="items")
     product = relationship("Product", back_populates="order_items")
 ```
@@ -401,9 +410,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
 
+
 class Payment(Base):
     __tablename__ = "payments"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"))
     yukassa_payment_id = Column(String, unique=True, nullable=False)
@@ -414,7 +424,7 @@ class Payment(Base):
     confirmation_url = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     order = relationship("Order", back_populates="payment")
 ```
 
@@ -424,20 +434,24 @@ from pydantic import BaseModel, validator
 from typing import Optional
 from datetime import datetime
 
+
 class CategoryBase(BaseModel):
     name: str
     description: Optional[str] = None
 
+
 class CategoryCreate(CategoryBase):
     pass
+
 
 class Category(CategoryBase):
     id: int
     is_active: bool
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
+
 
 class ProductBase(BaseModel):
     name: str
@@ -446,15 +460,17 @@ class ProductBase(BaseModel):
     old_price: Optional[float] = None
     category_id: int
     stock_quantity: int = 0
-    
-    @validator('price')
+
+    @validator("price")
     def validate_price(cls, v):
         if v <= 0:
-            raise ValueError('Price must be positive')
+            raise ValueError("Price must be positive")
         return v
+
 
 class ProductCreate(ProductBase):
     pass
+
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
@@ -465,6 +481,7 @@ class ProductUpdate(BaseModel):
     stock_quantity: Optional[int] = None
     is_available: Optional[bool] = None
 
+
 class Product(ProductBase):
     id: int
     image_url: Optional[str] = None
@@ -473,7 +490,7 @@ class Product(ProductBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     category: Category
-    
+
     class Config:
         from_attributes = True
 ```
@@ -485,28 +502,34 @@ from typing import List, Optional
 from datetime import datetime
 from app.schemas.product import Product
 
+
 class OrderItemBase(BaseModel):
     product_id: int
     quantity: int
 
+
 class OrderItemCreate(OrderItemBase):
     pass
+
 
 class OrderItem(OrderItemBase):
     id: int
     price: float
     product: Product
-    
+
     class Config:
         from_attributes = True
+
 
 class OrderBase(BaseModel):
     delivery_address: Optional[str] = None
     phone: Optional[str] = None
     notes: Optional[str] = None
 
+
 class OrderCreate(OrderBase):
     items: List[OrderItemCreate]
+
 
 class Order(OrderBase):
     id: int
@@ -516,7 +539,7 @@ class Order(OrderBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     items: List[OrderItem]
-    
+
     class Config:
         from_attributes = True
 ```
@@ -530,35 +553,31 @@ from app.config import settings
 Configuration.account_id = settings.YUKASSA_SHOP_ID
 Configuration.secret_key = settings.YUKASSA_SECRET_KEY
 
+
 class YuKassaService:
     @staticmethod
     async def create_payment(amount: float, description: str, order_id: int):
         """Create payment in YuKassa"""
         idempotence_key = str(uuid.uuid4())
-        
+
         payment_data = {
-            "amount": {
-                "value": f"{amount:.2f}",
-                "currency": "RUB"
-            },
+            "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
             "confirmation": {
                 "type": "redirect",
-                "return_url": f"https://t.me/{settings.TELEGRAM_BOT_TOKEN.split(':')[0]}"
+                "return_url": f"https://t.me/{settings.TELEGRAM_BOT_TOKEN.split(':')[0]}",
             },
             "description": description,
-            "metadata": {
-                "order_id": str(order_id)
-            }
+            "metadata": {"order_id": str(order_id)},
         }
-        
+
         payment = Payment.create(payment_data, idempotence_key)
         return payment
-    
+
     @staticmethod
     async def get_payment(payment_id: str):
         """Get payment info"""
         return Payment.find_one(payment_id)
-    
+
     @staticmethod
     async def capture_payment(payment_id: str):
         """Capture payment"""
@@ -581,8 +600,7 @@ logger = logging.getLogger(__name__)
 
 # Bot and dispatcher
 bot = Bot(
-    token=settings.TELEGRAM_BOT_TOKEN,
-    default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    token=settings.TELEGRAM_BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML)
 )
 dp = Dispatcher()
 
@@ -592,12 +610,14 @@ dp.include_router(catalog.router)
 dp.include_router(cart.router)
 dp.include_router(orders.router)
 
+
 async def main():
     # Delete webhook if exists
     await bot.delete_webhook(drop_pending_updates=True)
-    
+
     # Start polling
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -612,13 +632,14 @@ from app.bot.keyboards.inline import main_menu_kb
 
 router = Router()
 
+
 @router.message(CommandStart())
 async def start_handler(message: types.Message):
     user = message.from_user
-    
+
     # Save user to database here
     # await save_user_to_db(user)
-    
+
     welcome_text = f"""
 🛒 <b>Добро пожаловать в наш магазин!</b>
 
@@ -632,8 +653,9 @@ async def start_handler(message: types.Message):
 
 Выберите действие:
 """
-    
+
     await message.answer(welcome_text, reply_markup=main_menu_kb())
+
 
 @router.message(Command("help"))
 async def help_handler(message: types.Message):
@@ -663,66 +685,73 @@ async def help_handler(message: types.Message):
 ```python
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+
 def main_menu_kb():
     """Main menu keyboard"""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="📱 Каталог", callback_data="catalog")],
-        [InlineKeyboardButton(text="🛍 Корзина", callback_data="cart")],
-        [InlineKeyboardButton(text="📦 Мои заказы", callback_data="my_orders")],
-        [InlineKeyboardButton(text="ℹ️ О магазине", callback_data="about")]
-    ])
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="📱 Каталог", callback_data="catalog")],
+            [InlineKeyboardButton(text="🛍 Корзина", callback_data="cart")],
+            [InlineKeyboardButton(text="📦 Мои заказы", callback_data="my_orders")],
+            [InlineKeyboardButton(text="ℹ️ О магазине", callback_data="about")],
+        ]
+    )
+
 
 def catalog_kb(categories):
     """Catalog keyboard"""
     keyboard = []
     for category in categories:
-        keyboard.append([
-            InlineKeyboardButton(
-                text=f"📂 {category.name}",
-                callback_data=f"category_{category.id}"
-            )
-        ])
-    keyboard.append([
-        InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")
-    ])
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    text=f"📂 {category.name}", callback_data=f"category_{category.id}"
+                )
+            ]
+        )
+    keyboard.append([InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")])
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 def product_kb(product_id: int, in_cart: bool = False):
     """Product keyboard"""
     keyboard = []
-    
+
     if not in_cart:
-        keyboard.append([
-            InlineKeyboardButton(
-                text="🛍 Добавить в корзину",
-                callback_data=f"add_to_cart_{product_id}"
-            )
-        ])
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    text="🛍 Добавить в корзину", callback_data=f"add_to_cart_{product_id}"
+                )
+            ]
+        )
     else:
-        keyboard.append([
-            InlineKeyboardButton(
-                text="✅ В корзине",
-                callback_data=f"in_cart_{product_id}"
-            )
-        ])
-    
-    keyboard.extend([
+        keyboard.append(
+            [InlineKeyboardButton(text="✅ В корзине", callback_data=f"in_cart_{product_id}")]
+        )
+
+    keyboard.extend(
         [
-            InlineKeyboardButton(text="◀️", callback_data=f"prev_product_{product_id}"),
-            InlineKeyboardButton(text="▶️", callback_data=f"next_product_{product_id}")
-        ],
-        [InlineKeyboardButton(text="🔙 К каталогу", callback_data="catalog")]
-    ])
-    
+            [
+                InlineKeyboardButton(text="◀️", callback_data=f"prev_product_{product_id}"),
+                InlineKeyboardButton(text="▶️", callback_data=f"next_product_{product_id}"),
+            ],
+            [InlineKeyboardButton(text="🔙 К каталогу", callback_data="catalog")],
+        ]
+    )
+
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
 
 def cart_kb():
     """Cart keyboard"""
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💳 Оформить заказ", callback_data="checkout")],
-        [InlineKeyboardButton(text="🗑 Очистить корзину", callback_data="clear_cart")],
-        [InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")]
-    ])
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="💳 Оформить заказ", callback_data="checkout")],
+            [InlineKeyboardButton(text="🗑 Очистить корзину", callback_data="clear_cart")],
+            [InlineKeyboardButton(text="🔙 Назад", callback_data="main_menu")],
+        ]
+    )
 ```
 
 ### docker-compose.yml
@@ -908,16 +937,20 @@ import redis.asyncio as redis
 security = HTTPBearer()
 redis_client = redis.from_url(settings.REDIS_URL)
 
+
 async def verify_admin_token(token: str = Depends(security)):
     """Verify admin JWT token"""
     try:
-        payload = jwt.decode(token.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
         username: str = payload.get("sub")
         if username != settings.ADMIN_USERNAME:
             raise HTTPException(status_code=401, detail="Invalid authentication")
         return username
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication")
+
 
 async def rate_limit(key: str, limit: int = 10, window: int = 60):
     """Rate limiting decorator"""
@@ -948,12 +981,14 @@ from app.config import settings
 # Test database URL
 TEST_DATABASE_URL = "postgresql+asyncpg://postgres:password@localhost:5432/test_telegram_shop"
 
+
 @pytest.fixture(scope="session")
 def event_loop():
     """Create an instance of the default event loop for the test session."""
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
 
 @pytest.fixture(scope="session")
 async def test_engine():
@@ -965,17 +1000,19 @@ async def test_engine():
         await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
 
+
 @pytest.fixture
 async def test_session(test_engine):
     async_session = sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)
     async with async_session() as session:
         yield session
 
+
 @pytest.fixture
 async def client(test_session):
     def override_get_db():
         return test_session
-    
+
     app.dependency_overrides[get_db] = override_get_db
     async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac
@@ -987,32 +1024,31 @@ async def client(test_session):
 import pytest
 from httpx import AsyncClient
 
+
 @pytest.mark.asyncio
 async def test_create_product(client: AsyncClient):
     """Test product creation"""
     # First create category
-    category_data = {
-        "name": "Electronics",
-        "description": "Electronic devices"
-    }
+    category_data = {"name": "Electronics", "description": "Electronic devices"}
     category_response = await client.post("/api/categories/", json=category_data)
     assert category_response.status_code == 201
     category_id = category_response.json()["id"]
-    
+
     # Create product
     product_data = {
         "name": "iPhone 15",
         "description": "Latest iPhone",
         "price": 999.99,
         "category_id": category_id,
-        "stock_quantity": 10
+        "stock_quantity": 10,
     }
     response = await client.post("/api/products/", json=product_data)
     assert response.status_code == 201
-    
+
     product = response.json()
     assert product["name"] == "iPhone 15"
     assert product["price"] == 999.99
+
 
 @pytest.mark.asyncio
 async def test_get_products(client: AsyncClient):
@@ -1022,27 +1058,24 @@ async def test_get_products(client: AsyncClient):
     products = response.json()
     assert isinstance(products, list)
 
+
 @pytest.mark.asyncio
 async def test_create_order(client: AsyncClient):
     """Test order creation"""
     # Create user first (simplified)
-    user_data = {
-        "telegram_id": 123456789,
-        "first_name": "Test User"
-    }
+    user_data = {"telegram_id": 123456789, "first_name": "Test User"}
     user_response = await client.post("/api/users/", json=user_data)
     user_id = user_response.json()["id"]
-    
+
     # Create order
     order_data = {
-        "items": [
-            {"product_id": 1, "quantity": 2}
-        ],
+        "items": [{"product_id": 1, "quantity": 2}],
         "delivery_address": "Test Address",
-        "phone": "+1234567890"
+        "phone": "+1234567890",
     }
     response = await client.post(f"/api/orders/?user_id={user_id}", json=order_data)
     assert response.status_code == 201
+
 
 @pytest.mark.asyncio
 async def test_yukassa_webhook(client: AsyncClient):
@@ -1050,13 +1083,7 @@ async def test_yukassa_webhook(client: AsyncClient):
     webhook_data = {
         "type": "notification",
         "event": "payment.succeeded",
-        "object": {
-            "id": "test_payment_id",
-            "status": "succeeded",
-            "metadata": {
-                "order_id": "1"
-            }
-        }
+        "object": {"id": "test_payment_id", "status": "succeeded", "metadata": {"order_id": "1"}},
     }
     response = await client.post("/api/payments/webhook", json=webhook_data)
     assert response.status_code == 200
@@ -1069,24 +1096,19 @@ from unittest.mock import AsyncMock, Mock
 from aiogram.types import Message, User, Chat
 from app.bot.handlers.start import start_handler
 
+
 @pytest.mark.asyncio
 async def test_start_handler():
     """Test bot start handler"""
     # Mock message
     user = User(id=123456789, is_bot=False, first_name="Test", username="testuser")
     chat = Chat(id=123456789, type="private")
-    message = Message(
-        message_id=1,
-        date=None,
-        chat=chat,
-        from_user=user,
-        text="/start"
-    )
+    message = Message(message_id=1, date=None, chat=chat, from_user=user, text="/start")
     message.answer = AsyncMock()
-    
+
     # Call handler
     await start_handler(message)
-    
+
     # Verify response
     message.answer.assert_called_once()
     args = message.answer.call_args
@@ -1116,7 +1138,7 @@ app = FastAPI(
     description="API for Telegram-based e-commerce bot",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 # CORS middleware
@@ -1137,6 +1159,7 @@ app.include_router(products.router, prefix="/api", tags=["Products"])
 app.include_router(orders.router, prefix="/api", tags=["Orders"])
 app.include_router(payments.router, prefix="/api", tags=["Payments"])
 
+
 @app.on_event("startup")
 async def startup_event():
     """Initialize database"""
@@ -1144,24 +1167,24 @@ async def startup_event():
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database initialized")
 
+
 @app.get("/")
 async def root():
     """Root endpoint"""
     return {"message": "Telegram Shop API", "version": "1.0.0"}
+
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "database": "connected"}
 
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler"""
     logger.error(f"Global exception: {exc}")
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error"}
-    )
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 ```
 
 ### app/api/products.py
@@ -1174,10 +1197,16 @@ import aiofiles
 import os
 from app.database import get_db
 from app.models.product import Product, Category
-from app.schemas.product import ProductCreate, Product as ProductSchema, CategoryCreate, Category as CategorySchema
+from app.schemas.product import (
+    ProductCreate,
+    Product as ProductSchema,
+    CategoryCreate,
+    Category as CategorySchema,
+)
 from app.api.deps import verify_admin_token
 
 router = APIRouter()
+
 
 @router.get("/categories/", response_model=List[CategorySchema])
 async def get_categories(db: AsyncSession = Depends(get_db)):
@@ -1186,11 +1215,12 @@ async def get_categories(db: AsyncSession = Depends(get_db)):
     categories = result.scalars().all()
     return categories
 
+
 @router.post("/categories/", response_model=CategorySchema, status_code=201)
 async def create_category(
     category: CategoryCreate,
     db: AsyncSession = Depends(get_db),
-    admin: str = Depends(verify_admin_token)
+    admin: str = Depends(verify_admin_token),
 ):
     """Create new category (Admin only)"""
     db_category = Category(**category.dict())
@@ -1199,40 +1229,43 @@ async def create_category(
     await db.refresh(db_category)
     return db_category
 
+
 @router.get("/products/", response_model=List[ProductSchema])
 async def get_products(
     category_id: Optional[int] = None,
     skip: int = 0,
     limit: int = 100,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Get products with optional category filter"""
     query = select(Product).where(Product.is_available == True)
-    
+
     if category_id:
         query = query.where(Product.category_id == category_id)
-    
+
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
     products = result.scalars().all()
     return products
+
 
 @router.get("/products/{product_id}", response_model=ProductSchema)
 async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
     """Get product by ID"""
     result = await db.execute(select(Product).where(Product.id == product_id))
     product = result.scalar_one_or_none()
-    
+
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    
+
     return product
+
 
 @router.post("/products/", response_model=ProductSchema, status_code=201)
 async def create_product(
     product: ProductCreate,
     db: AsyncSession = Depends(get_db),
-    admin: str = Depends(verify_admin_token)
+    admin: str = Depends(verify_admin_token),
 ):
     """Create new product (Admin only)"""
     db_product = Product(**product.dict())
@@ -1241,37 +1274,38 @@ async def create_product(
     await db.refresh(db_product)
     return db_product
 
+
 @router.post("/products/{product_id}/image")
 async def upload_product_image(
     product_id: int,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
-    admin: str = Depends(verify_admin_token)
+    admin: str = Depends(verify_admin_token),
 ):
     """Upload product image (Admin only)"""
     # Validate file type
-    if not file.content_type.startswith('image/'):
+    if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
-    
+
     # Create filename
     filename = f"product_{product_id}_{file.filename}"
     file_path = f"uploads/{filename}"
-    
+
     # Save file
-    async with aiofiles.open(file_path, 'wb') as f:
+    async with aiofiles.open(file_path, "wb") as f:
         content = await file.read()
         await f.write(content)
-    
+
     # Update product
     result = await db.execute(select(Product).where(Product.id == product_id))
     product = result.scalar_one_or_none()
-    
+
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    
+
     product.image_url = f"/uploads/{filename}"
     await db.commit()
-    
+
     return {"message": "Image uploaded successfully", "image_url": product.image_url}
 ```
 
@@ -1292,88 +1326,82 @@ from app.tasks.orders import process_order
 
 router = APIRouter()
 
+
 @router.post("/orders/", response_model=OrderSchema, status_code=201)
-async def create_order(
-    order: OrderCreate,
-    user_id: int,
-    db: AsyncSession = Depends(get_db)
-):
+async def create_order(order: OrderCreate, user_id: int, db: AsyncSession = Depends(get_db)):
     """Create new order"""
     # Verify user exists
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     # Calculate total amount
     total_amount = 0
     order_items = []
-    
+
     for item in order.items:
         # Get product
         result = await db.execute(select(Product).where(Product.id == item.product_id))
         product = result.scalar_one_or_none()
-        
+
         if not product or not product.is_available:
             raise HTTPException(status_code=400, detail=f"Product {item.product_id} not available")
-        
+
         if product.stock_quantity < item.quantity:
-            raise HTTPException(status_code=400, detail=f"Not enough stock for product {item.product_id}")
-        
+            raise HTTPException(
+                status_code=400, detail=f"Not enough stock for product {item.product_id}"
+            )
+
         item_total = product.price * item.quantity
         total_amount += item_total
-        
-        order_items.append({
-            "product_id": item.product_id,
-            "quantity": item.quantity,
-            "price": product.price
-        })
-    
+
+        order_items.append(
+            {"product_id": item.product_id, "quantity": item.quantity, "price": product.price}
+        )
+
     # Create order
     db_order = Order(
         user_id=user_id,
         total_amount=total_amount,
         delivery_address=order.delivery_address,
         phone=order.phone,
-        notes=order.notes
+        notes=order.notes,
     )
     db.add(db_order)
     await db.flush()
-    
+
     # Create order items
     for item_data in order_items:
         db_item = OrderItem(order_id=db_order.id, **item_data)
         db.add(db_item)
-    
+
     await db.commit()
     await db.refresh(db_order)
-    
+
     # Start async order processing
     process_order.delay(db_order.id)
-    
+
     return db_order
+
 
 @router.get("/orders/{order_id}", response_model=OrderSchema)
 async def get_order(order_id: int, db: AsyncSession = Depends(get_db)):
     """Get order by ID"""
     result = await db.execute(
-        select(Order)
-        .options(selectinload(Order.items))
-        .where(Order.id == order_id)
+        select(Order).options(selectinload(Order.items)).where(Order.id == order_id)
     )
     order = result.scalar_one_or_none()
-    
+
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
+
     return order
+
 
 @router.get("/users/{user_id}/orders", response_model=List[OrderSchema])
 async def get_user_orders(
-    user_id: int,
-    skip: int = 0,
-    limit: int = 50,
-    db: AsyncSession = Depends(get_db)
+    user_id: int, skip: int = 0, limit: int = 50, db: AsyncSession = Depends(get_db)
 ):
     """Get user orders"""
     result = await db.execute(
@@ -1387,28 +1415,29 @@ async def get_user_orders(
     orders = result.scalars().all()
     return orders
 
+
 @router.put("/orders/{order_id}/status")
 async def update_order_status(
     order_id: int,
     status: str,
     db: AsyncSession = Depends(get_db),
-    admin: str = Depends(verify_admin_token)
+    admin: str = Depends(verify_admin_token),
 ):
     """Update order status (Admin only)"""
     valid_statuses = ["pending", "paid", "processing", "shipped", "delivered", "cancelled"]
-    
+
     if status not in valid_statuses:
         raise HTTPException(status_code=400, detail="Invalid status")
-    
+
     result = await db.execute(select(Order).where(Order.id == order_id))
     order = result.scalar_one_or_none()
-    
+
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
+
     order.status = status
     await db.commit()
-    
+
     return {"message": "Order status updated", "order_id": order_id, "status": status}
 ```
 
@@ -1428,49 +1457,46 @@ from app.tasks.notifications import send_payment_notification
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+
 @router.post("/orders/{order_id}/payment")
-async def create_payment(
-    order_id: int,
-    db: AsyncSession = Depends(get_db)
-):
+async def create_payment(order_id: int, db: AsyncSession = Depends(get_db)):
     """Create payment for order"""
     # Get order
     result = await db.execute(select(Order).where(Order.id == order_id))
     order = result.scalar_one_or_none()
-    
+
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
-    
+
     if order.status != "pending":
         raise HTTPException(status_code=400, detail="Order cannot be paid")
-    
+
     # Create payment in YuKassa
     try:
         yukassa_payment = await YuKassaService.create_payment(
-            amount=order.total_amount,
-            description=f"Заказ #{order.id}",
-            order_id=order.id
+            amount=order.total_amount, description=f"Заказ #{order.id}", order_id=order.id
         )
-        
+
         # Save payment to DB
         db_payment = Payment(
             order_id=order.id,
             yukassa_payment_id=yukassa_payment.id,
             amount=order.total_amount,
-            confirmation_url=yukassa_payment.confirmation.confirmation_url
+            confirmation_url=yukassa_payment.confirmation.confirmation_url,
         )
         db.add(db_payment)
         await db.commit()
-        
+
         return {
             "payment_id": yukassa_payment.id,
             "confirmation_url": yukassa_payment.confirmation.confirmation_url,
-            "amount": order.total_amount
+            "amount": order.total_amount,
         }
-        
+
     except Exception as e:
         logger.error(f"Payment creation failed: {e}")
         raise HTTPException(status_code=500, detail="Payment creation failed")
+
 
 @router.post("/payments/webhook")
 async def payment_webhook(request: Request, db: AsyncSession = Depends(get_db)):
@@ -1478,63 +1504,62 @@ async def payment_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     try:
         body = await request.body()
         event_data = json.loads(body)
-        
+
         # TODO: Verify webhook signature in production
-        
+
         if event_data.get("event") == "payment.succeeded":
             payment_id = event_data["object"]["id"]
             order_id = int(event_data["object"]["metadata"]["order_id"])
-            
+
             # Update payment status
             result = await db.execute(
                 select(Payment).where(Payment.yukassa_payment_id == payment_id)
             )
             payment = result.scalar_one_or_none()
-            
+
             if payment:
                 payment.status = "succeeded"
-                
+
                 # Update order status
                 result = await db.execute(select(Order).where(Order.id == order_id))
                 order = result.scalar_one_or_none()
-                
+
                 if order:
                     order.status = "paid"
                     await db.commit()
-                    
+
                     # Send notification
                     send_payment_notification.delay(order_id)
-                    
+
                     logger.info(f"Payment succeeded for order {order_id}")
-        
+
         return {"status": "ok"}
-        
+
     except Exception as e:
         logger.error(f"Webhook processing failed: {e}")
         raise HTTPException(status_code=400, detail="Webhook processing failed")
+
 
 @router.get("/payments/{payment_id}")
 async def get_payment(payment_id: str, db: AsyncSession = Depends(get_db)):
     """Get payment status"""
     try:
         yukassa_payment = await YuKassaService.get_payment(payment_id)
-        
+
         # Update local payment status
-        result = await db.execute(
-            select(Payment).where(Payment.yukassa_payment_id == payment_id)
-        )
+        result = await db.execute(select(Payment).where(Payment.yukassa_payment_id == payment_id))
         payment = result.scalar_one_or_none()
-        
+
         if payment and payment.status != yukassa_payment.status:
             payment.status = yukassa_payment.status
             await db.commit()
-        
+
         return {
             "payment_id": payment_id,
             "status": yukassa_payment.status,
-            "amount": yukassa_payment.amount.value if yukassa_payment.amount else None
+            "amount": yukassa_payment.amount.value if yukassa_payment.amount else None,
         }
-        
+
     except Exception as e:
         logger.error(f"Payment check failed: {e}")
         raise HTTPException(status_code=500, detail="Payment check failed")
@@ -1551,7 +1576,7 @@ celery_app = Celery(
     "telegram_shop",
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
-    include=["app.tasks.orders", "app.tasks.notifications"]
+    include=["app.tasks.orders", "app.tasks.notifications"],
 )
 
 celery_app.conf.update(
@@ -1580,41 +1605,39 @@ from app.models.product import Product
 
 logger = logging.getLogger(__name__)
 
+
 @celery_app.task
 def process_order(order_id: int):
     """Process order - update stock, send notifications"""
     asyncio.run(_process_order_async(order_id))
+
 
 async def _process_order_async(order_id: int):
     """Async order processing"""
     async with AsyncSessionLocal() as db:
         try:
             # Get order with items
-            result = await db.execute(
-                select(Order).where(Order.id == order_id)
-            )
+            result = await db.execute(select(Order).where(Order.id == order_id))
             order = result.scalar_one_or_none()
-            
+
             if not order:
                 logger.error(f"Order {order_id} not found")
                 return
-            
+
             # Update product stock
             for item in order.items:
-                result = await db.execute(
-                    select(Product).where(Product.id == item.product_id)
-                )
+                result = await db.execute(select(Product).where(Product.id == item.product_id))
                 product = result.scalar_one_or_none()
-                
+
                 if product:
                     product.stock_quantity -= item.quantity
                     if product.stock_quantity < 0:
                         product.stock_quantity = 0
                         product.is_available = False
-            
+
             await db.commit()
             logger.info(f"Order {order_id} processed successfully")
-            
+
         except Exception as e:
             logger.error(f"Order processing failed for {order_id}: {e}")
             await db.rollback()
@@ -1630,33 +1653,37 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 @celery_app.task
 def send_payment_notification(order_id: int):
     """Send payment confirmation to user"""
     asyncio.run(_send_payment_notification_async(order_id))
 
+
 async def _send_payment_notification_async(order_id: int):
     """Async notification sending"""
     try:
         telegram_service = TelegramService(settings.TELEGRAM_BOT_TOKEN)
-        
+
         # Get order and user info from DB
         # ... (implementation details)
-        
+
         message = f"✅ Оплата прошла успешно!\n\nЗаказ #{order_id} оплачен и принят в обработку."
-        
+
         # Send notification to user
         # await telegram_service.send_message(user_telegram_id, message)
-        
+
         logger.info(f"Payment notification sent for order {order_id}")
-        
+
     except Exception as e:
         logger.error(f"Failed to send payment notification for order {order_id}: {e}")
+
 
 @celery_app.task
 def send_order_status_notification(order_id: int, status: str):
     """Send order status update to user"""
     asyncio.run(_send_order_status_notification_async(order_id, status))
+
 
 async def _send_order_status_notification_async(order_id: int, status: str):
     """Async status notification"""
@@ -1664,16 +1691,16 @@ async def _send_order_status_notification_async(order_id: int, status: str):
         status_messages = {
             "processing": "📦 Ваш заказ принят в обработку",
             "shipped": "🚚 Ваш заказ отправлен",
-            "delivered": "✅ Ваш заказ доставлен"
+            "delivered": "✅ Ваш заказ доставлен",
         }
-        
+
         message = status_messages.get(status, f"Статус заказа изменён на: {status}")
         message += f"\n\nЗаказ #{order_id}"
-        
+
         # Send to user...
-        
+
         logger.info(f"Status notification sent for order {order_id}")
-        
+
     except Exception as e:
         logger.error(f"Failed to send status notification: {e}")
 ```

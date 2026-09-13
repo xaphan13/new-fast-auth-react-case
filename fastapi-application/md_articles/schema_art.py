@@ -3,11 +3,10 @@ import tempfile
 from pathlib import Path, PurePosixPath
 
 import yaml
-from markdown import markdown
-from pydantic import BaseModel, model_validator
-
 from base_dir_path import BASE_DIR
 from config_log import logF
+from markdown import markdown
+from pydantic import BaseModel, model_validator
 
 
 # ==============================================================================

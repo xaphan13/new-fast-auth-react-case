@@ -163,6 +163,7 @@ pydantic==2.5.3
 ```python
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
@@ -174,13 +175,14 @@ class Settings(BaseSettings):
     YOOKASSA_SECRET_KEY: str
     WEBHOOK_URL: str
     MONGO_URL: str = "mongodb://root:example@mongo:27017"
-    
+
     class Config:
         env_file = ".env"
 
     def __init__(self, **values):
         super().__init__(**values)
         self.DATABASE_URL = f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@db:5432/{self.POSTGRES_DB}"
+
 
 settings = Settings()
 ```
@@ -197,6 +199,7 @@ async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession
 
 Base = declarative_base()
 
+
 async def get_db():
     async with async_session() as session:
         yield session
@@ -208,6 +211,7 @@ from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from .database import Base
 
+
 class Product(Base):
     __tablename__ = "products"
     id = Column(Integer, primary_key=True, index=True)
@@ -216,6 +220,7 @@ class Product(Base):
     price = Column(Float)
     is_available = Column(Boolean, default=True)
     orders = relationship("Order", back_populates="product")
+
 
 class Order(Base):
     __tablename__ = "orders"
@@ -231,23 +236,28 @@ class Order(Base):
 ```python
 from pydantic import BaseModel
 
+
 class ProductCreate(BaseModel):
     name: str
     description: str
     price: float
 
+
 class ProductResponse(ProductCreate):
     id: int
     is_available: bool
+
 
 class OrderCreate(BaseModel):
     product_id: int
     user_id: int
 
+
 class OrderResponse(OrderCreate):
     id: int
     status: str
     payment_url: str
+
 
 class YookassaWebhook(BaseModel):
     event: str
@@ -268,16 +278,19 @@ app.include_router(orders.router, prefix="/orders", tags=["orders"])
 app.include_router(payments.router, prefix="/payments", tags=["payments"])
 app.include_router(bot.router, prefix="/bot", tags=["bot"])
 
+
 @app.on_event("startup")
 async def startup():
     # Инициализация подключений к БД
     from app.database import engine
+
     async with engine.begin() as conn:
         # Для разработки: удалить в продакшене!
         await conn.run_sync(Base.metadata.create_all)
-    
+
     # Настройка вебхука Telegram
     from app.services.telegram import setup_bot_webhook
+
     await setup_bot_webhook()
 ```
 
@@ -290,27 +303,28 @@ from app.config import settings
 bot = Bot(token=settings.TELEGRAM_TOKEN)
 dp = Dispatcher()
 
+
 async def setup_bot_webhook():
-    await bot.set_webhook(
-        url=settings.WEBHOOK_URL,
-        drop_pending_updates=True
-    )
+    await bot.set_webhook(url=settings.WEBHOOK_URL, drop_pending_updates=True)
+
 
 @dp.message(commands=["start"])
 async def start_command(message: types.Message, state: FSMContext):
-    await message.answer("🏪 Добро пожаловать в наш магазин!\n\n"
-                         "Используйте команды:\n"
-                         "/products - список товаров\n"
-                         "/cart - ваша корзина\n"
-                         "/orders - ваши заказы")
+    await message.answer(
+        "🏪 Добро пожаловать в наш магазин!\n\n"
+        "Используйте команды:\n"
+        "/products - список товаров\n"
+        "/cart - ваша корзина\n"
+        "/orders - ваши заказы"
+    )
+
 
 @dp.message(commands=["products"])
 async def list_products(message: types.Message):
     # Здесь будет логика получения товаров из БД
-    await message.answer("📦 Список товаров:\n\n"
-                         "1. Товар 1 - 100₽\n"
-                         "2. Товар 2 - 200₽\n"
-                         "3. Товар 3 - 300₽")
+    await message.answer(
+        "📦 Список товаров:\n\n1. Товар 1 - 100₽\n2. Товар 2 - 200₽\n3. Товар 3 - 300₽"
+    )
 ```
 
 **11. app/api/bot.py**:
@@ -322,11 +336,13 @@ from app.config import settings
 
 router = APIRouter()
 
+
 @router.post("/webhook")
 async def telegram_webhook(update: dict):
     telegram_update = types.Update(**update)
     await dp.feed_webhook_update(bot, telegram_update)
     return {"status": "ok"}
+
 
 @router.post("/notify")
 async def notify_user(chat_id: int, message: str):
@@ -345,37 +361,36 @@ import uuid
 
 router = APIRouter()
 
+
 @router.post("/", response_model=schemas.OrderResponse)
 async def create_order(order: schemas.OrderCreate, db: AsyncSession = Depends(get_db)):
     # Проверка наличия товара
     product = await db.get(models.Product, order.product_id)
     if not product or not product.is_available:
         raise HTTPException(status_code=404, detail="Товар недоступен")
-    
+
     # Создание платежа в ЮKassa
     payment_info = await create_yookassa_payment(
-        amount=product.price,
-        currency="RUB",
-        description=f"Оплата товара: {product.name}"
+        amount=product.price, currency="RUB", description=f"Оплата товара: {product.name}"
     )
-    
+
     # Сохранение заказа в БД
     db_order = models.Order(
         user_id=order.user_id,
         product_id=order.product_id,
         yookassa_id=payment_info["id"],
-        status="pending"
+        status="pending",
     )
     db.add(db_order)
     await db.commit()
     await db.refresh(db_order)
-    
+
     return {
         "id": db_order.id,
         "user_id": db_order.user_id,
         "product_id": db_order.product_id,
         "status": db_order.status,
-        "payment_url": payment_info["confirmation"]["confirmation_url"]
+        "payment_url": payment_info["confirmation"]["confirmation_url"],
     }
 ```
 
@@ -387,11 +402,14 @@ import httpx
 
 celery = Celery(__name__, broker=settings.REDIS_URL)
 
+
 @celery.task
 def process_payment_webhook(data: dict):
     # Обработка вебхука от ЮKassa
     from app.services.payment import handle_yookassa_webhook
+
     handle_yookassa_webhook(data)
+
 
 @celery.task
 def send_telegram_notification(chat_id: int, message: str):
@@ -407,44 +425,52 @@ def send_telegram_notification(chat_id: int, message: str):
 """Initial migration
 
 Revision ID: a1b2c3d4e5f6
-Revises: 
+Revises:
 Create Date: 2023-08-13 12:00:00.000000
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic
-revision = 'a1b2c3d4e5f6'
+revision = "a1b2c3d4e5f6"
 down_revision = None
 branch_labels = None
 depends_on = None
 
+
 def upgrade():
-    op.create_table('products',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('name', sa.String(length=100), nullable=False),
-        sa.Column('description', sa.String(length=300), nullable=True),
-        sa.Column('price', sa.Float(), nullable=False),
-        sa.Column('is_available', sa.Boolean(), server_default='true', nullable=False),
-        sa.PrimaryKeyConstraint('id')
+    op.create_table(
+        "products",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("name", sa.String(length=100), nullable=False),
+        sa.Column("description", sa.String(length=300), nullable=True),
+        sa.Column("price", sa.Float(), nullable=False),
+        sa.Column("is_available", sa.Boolean(), server_default="true", nullable=False),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f('ix_products_name'), 'products', ['name'], unique=False)
-    
-    op.create_table('orders',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('user_id', sa.Integer(), nullable=False),
-        sa.Column('product_id', sa.Integer(), nullable=False),
-        sa.Column('status', sa.String(length=20), server_default='created', nullable=False),
-        sa.Column('yookassa_id', sa.String(length=50), nullable=True),
-        sa.ForeignKeyConstraint(['product_id'], ['products.id'], ),
-        sa.PrimaryKeyConstraint('id')
+    op.create_index(op.f("ix_products_name"), "products", ["name"], unique=False)
+
+    op.create_table(
+        "orders",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("user_id", sa.Integer(), nullable=False),
+        sa.Column("product_id", sa.Integer(), nullable=False),
+        sa.Column("status", sa.String(length=20), server_default="created", nullable=False),
+        sa.Column("yookassa_id", sa.String(length=50), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["product_id"],
+            ["products.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f('ix_orders_user_id'), 'orders', ['user_id'], unique=False)
+    op.create_index(op.f("ix_orders_user_id"), "orders", ["user_id"], unique=False)
+
 
 def downgrade():
-    op.drop_table('orders')
-    op.drop_table('products')
+    op.drop_table("orders")
+    op.drop_table("products")
 ```
 
 ---

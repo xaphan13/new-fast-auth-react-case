@@ -1,7 +1,8 @@
 import os
-from pathlib import Path
 import time
+from pathlib import Path
 
+from auth_users import active_user
 from fastapi import (
     APIRouter,
     Depends,
@@ -11,8 +12,8 @@ from fastapi import (
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from auth_users import active_user
 from md_articles.schema_art import (
+    ArticleLang,
     get_art,
     get_articles,
     get_registry_error,
@@ -22,9 +23,7 @@ from md_articles.schema_art import (
     scan_content_art,
     sync_registry_with_disk,
 )
-from md_articles.schema_art import ArticleLang
 from md_articles.schema_blog import MetaIn, SectionOut
-
 
 router_blog_api = APIRouter(
     prefix="/api/blog",
@@ -96,6 +95,7 @@ async def article_detail(art_id: int):
         raise HTTPException(status_code=404, detail="Article not found")
 
     import os
+
     from md_articles.schema_art import get_path_dir
 
     content_dir = get_path_dir()

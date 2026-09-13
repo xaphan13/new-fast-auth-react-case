@@ -99,6 +99,7 @@ app = FastAPI(title="Telegram Store API")
 app.include_router(products.router, prefix="/api/products")
 app.include_router(orders.router, prefix="/api/orders")
 
+
 # Setup aiogram webhook (runs on startup)
 @app.on_event("startup")
 async def on_startup():
@@ -123,8 +124,10 @@ SYNC_DATABASE_URL = DATABASE_URL.replace("+asyncpg", "")
 engine = create_async_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
 
+
 class Base(DeclarativeBase):
     pass
+
 
 # Для Alembic sync engine
 sync_engine = create_engine(SYNC_DATABASE_URL)
@@ -134,9 +137,11 @@ MONGO_URL = f"mongodb://{os.getenv('MONGO_HOST')}:{os.getenv('MONGO_PORT')}"
 mongo_client = AsyncIOMotorClient(MONGO_URL)
 mongo_db = mongo_client["telegram_store"]
 
+
 async def get_db():
     async with SessionLocal() as session:
         yield session
+
 
 async def get_mongo():
     yield mongo_db
@@ -148,12 +153,14 @@ from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.sql import func
 from app.database import Base
 
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     email = Column(String, unique=True)
     telegram_id = Column(String)  # Для уведомлений
+
 
 class Product(Base):
     __tablename__ = "products"
@@ -163,6 +170,7 @@ class Product(Base):
     description = Column(String)
     stock = Column(Integer, default=0)
 
+
 class Order(Base):
     __tablename__ = "orders"
     id = Column(Integer, primary_key=True, index=True)
@@ -170,6 +178,7 @@ class Order(Base):
     total = Column(Float)
     status = Column(String, default="pending")
     created_at = Column(DateTime, default=func.now())
+
 
 class OrderItem(Base):
     __tablename__ = "order_items"
@@ -185,14 +194,17 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 
+
 class ProductBase(BaseModel):
     name: str
     price: float
     description: Optional[str] = None
     stock: int = 0
 
+
 class ProductCreate(ProductBase):
     pass
+
 
 class Product(ProductBase):
     id: int
@@ -200,12 +212,15 @@ class Product(ProductBase):
     class Config:
         from_attributes = True
 
+
 class OrderItemBase(BaseModel):
     product_id: int
     quantity: int
 
+
 class OrderCreate(BaseModel):
     items: List[OrderItemBase]
+
 
 class Order(BaseModel):
     id: int
@@ -217,6 +232,7 @@ class Order(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class Payment(BaseModel):
     order_id: int
@@ -233,6 +249,7 @@ from app.models import Product, Order, OrderItem, User
 from app.schemas import ProductCreate, OrderCreate
 from typing import List
 
+
 async def create_product(db: AsyncSession, product: ProductCreate):
     db_product = Product(**product.dict())
     db.add(db_product)
@@ -240,9 +257,11 @@ async def create_product(db: AsyncSession, product: ProductCreate):
     await db.refresh(db_product)
     return db_product
 
+
 async def get_products(db: AsyncSession) -> List[Product]:
     result = await db.execute(select(Product))
     return result.scalars().all()
+
 
 async def create_order(db: AsyncSession, order: OrderCreate, user_id: int):
     total = 0.0  # Здесь рассчитайте total на основе items (упрощено)
@@ -256,9 +275,11 @@ async def create_order(db: AsyncSession, order: OrderCreate, user_id: int):
     await db.commit()
     return db_order
 
+
 async def get_order(db: AsyncSession, order_id: int):
     result = await db.execute(select(Order).where(Order.id == order_id))
     return result.scalar_one_or_none()
+
 
 async def update_order_status(db: AsyncSession, order_id: int, status: str):
     order = await get_order(db, order_id)
@@ -275,10 +296,12 @@ from fastapi import Depends
 from app.database import get_db, get_mongo
 from sqlalchemy.ext.asyncio import AsyncSession
 
+
 async def get_sql_db(db: AsyncSession = Depends(get_db)):
     yield db
 
-async def get_mongo_db(mongo = Depends(get_mongo)):
+
+async def get_mongo_db(mongo=Depends(get_mongo)):
     yield mongo
 ```
 
@@ -293,9 +316,11 @@ from typing import List
 
 router = APIRouter()
 
+
 @router.get("/", response_model=List[Product])
 async def read_products(db: AsyncSession = Depends(get_sql_db)):
     return await get_products(db)
+
 
 @router.post("/", response_model=Product)
 async def add_product(product: ProductCreate, db: AsyncSession = Depends(get_sql_db)):
@@ -315,10 +340,14 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter()
 
+
 @router.post("/", response_model=Order)
-async def add_order(order: OrderCreate, user_id: int = 1, db: AsyncSession = Depends(get_sql_db)):  # user_id из auth в реале
+async def add_order(
+    order: OrderCreate, user_id: int = 1, db: AsyncSession = Depends(get_sql_db)
+):  # user_id из auth в реале
     db_order = await create_order(db, order, user_id)
     return db_order
+
 
 @router.post("/payments/{order_id}", response_model=dict)
 async def initiate_payment(order_id: int, db: AsyncSession = Depends(get_sql_db)):
@@ -328,11 +357,16 @@ async def initiate_payment(order_id: int, db: AsyncSession = Depends(get_sql_db)
     payment_url = create_payment(order.total, order_id)
     return {"payment_url": payment_url}
 
+
 @router.post("/payments/webhook")
-async def yukassa_webhook(request: Request, db: AsyncSession = Depends(get_sql_db), mongo: AsyncIOMotorDatabase = Depends(get_mongo)):
+async def yukassa_webhook(
+    request: Request,
+    db: AsyncSession = Depends(get_sql_db),
+    mongo: AsyncIOMotorDatabase = Depends(get_mongo),
+):
     payload = await request.json()
-    if payload.get('event') == 'payment.succeeded':
-        order_id = int(payload['object']['metadata']['order_id'])
+    if payload.get("event") == "payment.succeeded":
+        order_id = int(payload["object"]["metadata"]["order_id"])
         order = await update_order_status(db, order_id, "paid")
         if order:
             # Celery tasks
@@ -351,7 +385,10 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime
 
 load_dotenv()
-app = Celery('tasks', broker=os.getenv('CELERY_BROKER_URL'), backend=os.getenv('CELERY_RESULT_BACKEND'))
+app = Celery(
+    "tasks", broker=os.getenv("CELERY_BROKER_URL"), backend=os.getenv("CELERY_RESULT_BACKEND")
+)
+
 
 @app.task
 def send_order_notification(user_id: int, message: str):
@@ -359,9 +396,10 @@ def send_order_notification(user_id: int, message: str):
     telegram_id = "dummy_telegram_id"  # Замените на реальный запрос
     send_telegram_message(telegram_id, message)
 
+
 @app.task
 def log_order_event(order_id: int, event: str, mongo: AsyncIOMotorDatabase):
-    collection = mongo['logs']
+    collection = mongo["logs"]
     collection.insert_one({"order_id": order_id, "event": event, "timestamp": datetime.now()})
 ```
 
@@ -373,17 +411,21 @@ import os
 import uuid
 
 load_dotenv()
-Configuration.account_id = os.getenv('YUKASSA_SHOP_ID')
-Configuration.secret_key = os.getenv('YUKASSA_SECRET_KEY')
+Configuration.account_id = os.getenv("YUKASSA_SHOP_ID")
+Configuration.secret_key = os.getenv("YUKASSA_SECRET_KEY")
+
 
 def create_payment(amount: float, order_id: int):
-    payment = Payment.create({
-        "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
-        "confirmation": {"type": "redirect", "return_url": "https://your-site/success"},
-        "capture": True,
-        "description": f"Order {order_id}",
-        "metadata": {"order_id": order_id}
-    }, uuid.uuid4())
+    payment = Payment.create(
+        {
+            "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
+            "confirmation": {"type": "redirect", "return_url": "https://your-site/success"},
+            "capture": True,
+            "description": f"Order {order_id}",
+            "metadata": {"order_id": order_id},
+        },
+        uuid.uuid4(),
+    )
     return payment.confirmation.confirmation_url
 ```
 
@@ -396,19 +438,22 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-bot = Bot(token=os.getenv('TELEGRAM_TOKEN'))
+bot = Bot(token=os.getenv("TELEGRAM_TOKEN"))
 dp = Dispatcher()
+
 
 @dp.message()
 async def echo(message: types.Message):
     await message.answer(message.text)  # Пример хэндлера
 
+
 async def setup_telegram_webhook(app: FastAPI):
-    webhook_url = os.getenv('TELEGRAM_WEBHOOK_URL')
+    webhook_url = os.getenv("TELEGRAM_WEBHOOK_URL")
     await bot.set_webhook(webhook_url)
     # Интеграция aiogram с FastAPI
     handler = SimpleRequestHandler(dispatcher=dp, bot=bot)
     handler.register(app, path="/webhook/telegram")
+
 
 async def send_telegram_message(chat_id: str, text: str):
     await bot.send_message(chat_id=chat_id, text=text)
@@ -428,21 +473,31 @@ fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
 
+
 def run_migrations_offline():
     url = SYNC_DATABASE_URL
-    context.configure(url=url, target_metadata=target_metadata, literal_binds=True, dialect_opts={"paramstyle": "named"})
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
 
     with context.begin_transaction():
         context.run_migrations()
 
+
 def run_migrations_online():
-    connectable = engine_from_config(config.get_section(config.config_ini_section), prefix="sqlalchemy.", poolclass=pool.NullPool)
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section), prefix="sqlalchemy.", poolclass=pool.NullPool
+    )
 
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()
@@ -480,70 +535,86 @@ def downgrade():
 """Initial migration
 
 Revision ID: 0001_initial
-Revises: 
+Revises:
 Create Date: 2025-08-14 12:00:00.000000
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 
-revision = '0001_initial'
+revision = "0001_initial"
 down_revision = None
 branch_labels = None
 depends_on = None
 
+
 def upgrade():
-    op.create_table('users',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('username', sa.String(), nullable=True),
-        sa.Column('email', sa.String(), nullable=True),
-        sa.Column('telegram_id', sa.String(), nullable=True),
-        sa.PrimaryKeyConstraint('id'),
-        sa.UniqueConstraint('email'),
-        sa.UniqueConstraint('username')
+    op.create_table(
+        "users",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("username", sa.String(), nullable=True),
+        sa.Column("email", sa.String(), nullable=True),
+        sa.Column("telegram_id", sa.String(), nullable=True),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint("email"),
+        sa.UniqueConstraint("username"),
     )
-    op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
-    op.create_table('products',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('name', sa.String(), nullable=True),
-        sa.Column('price', sa.Float(), nullable=True),
-        sa.Column('description', sa.String(), nullable=True),
-        sa.Column('stock', sa.Integer(), nullable=True),
-        sa.PrimaryKeyConstraint('id')
+    op.create_index(op.f("ix_users_id"), "users", ["id"], unique=False)
+    op.create_table(
+        "products",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("name", sa.String(), nullable=True),
+        sa.Column("price", sa.Float(), nullable=True),
+        sa.Column("description", sa.String(), nullable=True),
+        sa.Column("stock", sa.Integer(), nullable=True),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f('ix_products_id'), 'products', ['id'], unique=False)
-    op.create_index(op.f('ix_products_name'), 'products', ['name'], unique=False)
-    op.create_table('orders',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('user_id', sa.Integer(), nullable=True),
-        sa.Column('total', sa.Float(), nullable=True),
-        sa.Column('status', sa.String(), nullable=True),
-        sa.Column('created_at', sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-        sa.PrimaryKeyConstraint('id')
+    op.create_index(op.f("ix_products_id"), "products", ["id"], unique=False)
+    op.create_index(op.f("ix_products_name"), "products", ["name"], unique=False)
+    op.create_table(
+        "orders",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("user_id", sa.Integer(), nullable=True),
+        sa.Column("total", sa.Float(), nullable=True),
+        sa.Column("status", sa.String(), nullable=True),
+        sa.Column("created_at", sa.DateTime(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["user_id"],
+            ["users.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f('ix_orders_id'), 'orders', ['id'], unique=False)
-    op.create_table('order_items',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('order_id', sa.Integer(), nullable=True),
-        sa.Column('product_id', sa.Integer(), nullable=True),
-        sa.Column('quantity', sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ),
-        sa.ForeignKeyConstraint(['product_id'], ['products.id'], ),
-        sa.PrimaryKeyConstraint('id')
+    op.create_index(op.f("ix_orders_id"), "orders", ["id"], unique=False)
+    op.create_table(
+        "order_items",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("order_id", sa.Integer(), nullable=True),
+        sa.Column("product_id", sa.Integer(), nullable=True),
+        sa.Column("quantity", sa.Integer(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["order_id"],
+            ["orders.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["product_id"],
+            ["products.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f('ix_order_items_id'), 'order_items', ['id'], unique=False)
+    op.create_index(op.f("ix_order_items_id"), "order_items", ["id"], unique=False)
+
 
 def downgrade():
-    op.drop_index(op.f('ix_order_items_id'), table_name='order_items')
-    op.drop_table('order_items')
-    op.drop_index(op.f('ix_orders_id'), table_name='orders')
-    op.drop_table('orders')
-    op.drop_index(op.f('ix_products_name'), table_name='products')
-    op.drop_index(op.f('ix_products_id'), table_name='products')
-    op.drop_table('products')
-    op.drop_index(op.f('ix_users_id'), table_name='users')
-    op.drop_table('users')
+    op.drop_index(op.f("ix_order_items_id"), table_name="order_items")
+    op.drop_table("order_items")
+    op.drop_index(op.f("ix_orders_id"), table_name="orders")
+    op.drop_table("orders")
+    op.drop_index(op.f("ix_products_name"), table_name="products")
+    op.drop_index(op.f("ix_products_id"), table_name="products")
+    op.drop_table("products")
+    op.drop_index(op.f("ix_users_id"), table_name="users")
+    op.drop_table("users")
 ```
 
 ### alembic.ini

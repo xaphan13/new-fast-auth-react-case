@@ -1,12 +1,10 @@
+from core.config import settings
 from fastapi import APIRouter
 
-from core.config import settings
-
-from .my_param_fast_cls import router_param_fast_cls_old
-from .my_param_fast_ann import router_param_fast_cls
 from .my_param_dep_cls import router_param_dep_cls
 from .my_param_dep_func import router_param_dep_func
-
+from .my_param_fast_ann import router_param_fast_cls
+from .my_param_fast_cls import router_param_fast_cls_old
 
 router_param_extract = APIRouter()
 

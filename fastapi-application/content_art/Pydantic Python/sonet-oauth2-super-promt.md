@@ -117,13 +117,15 @@ def generate_google_oauth_redirect_uri():
         "client_id": settings.OAUTH_GOOGLE_CLIENT_ID,
         "redirect_uri": "http://localhost:3000/auth/google",
         "response_type": "code",
-        "scope": " ".join([
-            "https://www.googleapis.com/auth/drive",
-            "https://www.googleapis.com/auth/calendar",
-            "openid",
-            "profile",
-            "email",
-        ]),
+        "scope": " ".join(
+            [
+                "https://www.googleapis.com/auth/drive",
+                "https://www.googleapis.com/auth/calendar",
+                "openid",
+                "profile",
+                "email",
+            ]
+        ),
         "access_type": "offline",
         "state": random_state,
     }
@@ -131,7 +133,6 @@ def generate_google_oauth_redirect_uri():
     query_string = urllib.parse.urlencode(query_params, quote_via=urllib.parse.quote)
     base_url = "https://accounts.google.com/o/oauth2/v2/auth"
     return f"{base_url}?{query_string}"
-
 ```
 
 ### Backend: `router.py`
@@ -193,9 +194,7 @@ async def handle_code(
     async with aiohttp.ClientSession() as session:
         async with session.get(
             url="https://www.googleapis.com/drive/v3/files",
-            headers={
-                "Authorization": f"Bearer {access_token}"
-            },
+            headers={"Authorization": f"Bearer {access_token}"},
             ssl=False,
         ) as response:
             res = await response.json()
@@ -206,7 +205,6 @@ async def handle_code(
         "user": user_data,
         "files": files,
     }
-
 ```
 
 ## 2. Детальный разбор кода
@@ -256,7 +254,6 @@ if (code && state) {
 def generate_google_oauth_redirect_uri():
     random_state = secrets.token_urlsafe(16)
     state_storage.add(random_state)
-
 ```
 
 -   **`secrets.token_urlsafe(16)`**: Генерирует криптографически стойкий случайный токен
@@ -271,7 +268,6 @@ query_params = {
     "access_type": "offline",
     "state": random_state,
 }
-
 ```
 
 -   **`client_id`**: Идентификатор приложения в Google Console
@@ -290,7 +286,6 @@ query_params = {
 def get_google_oauth_redirect_uri():
     uri = generate_google_oauth_redirect_uri()
     return RedirectResponse(url=uri, status_code=302)
-
 ```
 
 -   Генерирует URL для авторизации Google
@@ -305,7 +300,6 @@ async def handle_code(
 ):
     if state not in state_storage:
         raise
-
 ```
 
 -   **Проверка state**: Защита от CSRF-атак
@@ -337,7 +331,6 @@ user_data = jwt.decode(
     algorithms=["RS256"],
     options={"verify_signature": False},
 )
-
 ```
 
 -   **`id_token`**: JWT токен с информацией о пользователе
@@ -457,7 +450,6 @@ Backend → Google Drive API → Frontend
         algorithms=["RS256"],
         options={"verify_signature": False},  # ОПАСНО!
     )
-    
     ```
     
     **Риск**: Злоумышленник может подделать id_token **Решение**: Всегда проверять подпись JWT
@@ -466,7 +458,6 @@ Backend → Google Drive API → Frontend
     
     ```python
     state_storage = set()  # Теряется при перезапуске
-    
     ```
     
     **Риск**: State может быть потерян, replay-атаки **Решение**: Использовать Redis или базу данных
@@ -476,7 +467,6 @@ Backend → Google Drive API → Frontend
     ```python
     if state not in state_storage:
         raise  # Неинформативная ошибка
-    
     ```
     
 
@@ -489,8 +479,7 @@ Backend → Google Drive API → Frontend
 2.  **SSL отключен**:
     
     ```python
-    ssl=False  # Небезопасно для продакшена
-    
+    ssl = False  # Небезопасно для продакшена
     ```
     
 3.  **Отсутствие логирования**:

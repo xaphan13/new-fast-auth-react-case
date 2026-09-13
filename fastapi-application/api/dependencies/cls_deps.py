@@ -1,9 +1,10 @@
-from typing import Generator, Self, Annotated
+from collections.abc import Generator
+from typing import Annotated, Self
 
 from fastapi import (
-    Request,
     Header,
     HTTPException,
+    Request,
     status,
 )
 from pydantic import BaseModel

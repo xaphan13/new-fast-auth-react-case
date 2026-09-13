@@ -1,19 +1,17 @@
+from base_dir_path import BASE_DIR
+from config_log import logF
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.routing import Route
 
-from base_dir_path import BASE_DIR
-from config_log import logF
 from md_articles.api_blog import router_blog_api
 
 
 # ==============================================================================
 # ++++++++++++++++ include_router & static для блога / auth_users +++++++++++++
 # ------------------------------------------------------------------------------
-def include_router_api_frontend(
-    app: FastAPI, auth_users_router=None
-) -> None:
+def include_router_api_frontend(app: FastAPI, auth_users_router=None) -> None:
     """
     Подключает блог `md_articles` и пакет авторизации `auth_users`.
 

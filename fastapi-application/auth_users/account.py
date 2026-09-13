@@ -9,6 +9,7 @@ current_user (без создания нового).
 Возвращает {message, category, user} в формате, привычном фронтенду блога.
 """
 
+from db_core.db_async import CurrentSession
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from auth_users.fastapi_users_obj import active_user
@@ -22,8 +23,6 @@ from auth_users.helpers import (
     validation_response,
 )
 from auth_users.models import User
-from db_core.db_async import CurrentSession
-
 
 router = APIRouter(tags=["auth-account"], prefix="/auth")
 
@@ -42,9 +41,7 @@ async def account_post(
     if not username:
         errors.setdefault("username", []).append("This field is required.")
     elif len(username) < 2 or len(username) > 20:
-        errors.setdefault("username", []).append(
-            "Field must be between 2 and 20 characters long."
-        )
+        errors.setdefault("username", []).append("Field must be between 2 and 20 characters long.")
     if not email:
         errors.setdefault("email", []).append("This field is required.")
     elif not is_valid_email(email):

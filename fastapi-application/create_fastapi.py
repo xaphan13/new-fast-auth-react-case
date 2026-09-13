@@ -1,12 +1,11 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
-from fastapi.responses import ORJSONResponse
-
 from config_log import logF
 from core.config import SqliteDsn, settings
 from core.docs import reg_docs_routes
 from db_core.db_async import db_manager
+from fastapi import FastAPI
+from fastapi.responses import ORJSONResponse
 
 
 @asynccontextmanager

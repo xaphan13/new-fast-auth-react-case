@@ -52,11 +52,11 @@ app/models/
 from fastapi.responses import StreamingResponse
 from app.services.chat import stream_chat_response
 
+
 @router.post("/chat")
 async def chat_endpoint(prompt: ChatRequest = Body(...), user: User = Depends(current_user)):
     return StreamingResponse(
-        stream_chat_response(prompt.prompt, user),
-        media_type="text/event-stream"
+        stream_chat_response(prompt.prompt, user), media_type="text/event-stream"
     )
 ```
 
@@ -121,8 +121,7 @@ app/core/
 
 ```python
 response = await asyncio.wait_for(
-    client.chat.completions.create(model=..., messages=...),
-    timeout=30
+    client.chat.completions.create(model=..., messages=...), timeout=30
 )
 ```
 
@@ -137,6 +136,7 @@ client = AsyncOpenAI(api_key=..., base_url=..., timeout=30.0)
 
 ```python
 from openai import APIError, APIConnectionError, RateLimitError, APITimeoutError
+
 
 async def get_chat_response(prompt: str) -> str:
     try:
@@ -172,6 +172,7 @@ npx tailwindcss init
 
 ```python
 import httpx
+
 http_client = httpx.AsyncClient(max_connections=100, max_keepalive_connections=20)
 client = AsyncOpenAI(api_key=..., base_url=..., http_client=http_client)
 ```
@@ -230,6 +231,7 @@ tests/
 import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
+
 
 @pytest.fixture
 async def client():
@@ -310,6 +312,7 @@ format:
 # app/core/logging.py
 import logging
 import sys
+
 
 def setup_logging(debug: bool = False):
     level = logging.DEBUG if debug else logging.INFO

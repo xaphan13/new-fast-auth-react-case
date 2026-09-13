@@ -13,6 +13,8 @@ import io
 import os
 from pathlib import Path
 
+from base_dir_path import BASE_DIR
+from db_core.db_async import CurrentSession
 from fastapi import UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
@@ -20,8 +22,6 @@ from pydantic import EmailStr
 from sqlalchemy import select
 
 from auth_users.models import User
-from base_dir_path import BASE_DIR
-from db_core.db_async import CurrentSession
 
 
 # ==============================================================================

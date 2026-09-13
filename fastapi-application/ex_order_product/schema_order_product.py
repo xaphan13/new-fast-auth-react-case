@@ -1,26 +1,25 @@
-from pydantic import BaseModel
-
-from typing import Optional, List
-
 from datetime import datetime
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 # ==================================================================== #
 #                   BaseModel - Order - pydantic                       #
 # ==================================================================== #
 class OrderGetQuery(BaseModel):
-    id: Optional[int] = None
-    created_at: Optional[datetime] = None
-    promocode: Optional[str] = None
+    id: int | None = None
+    created_at: datetime | None = None
+    promocode: str | None = None
 
 
 class OrderCreateBody(BaseModel):
-    promocode: Optional[str] = None
+    promocode: str | None = None
 
 
 class OrderUpdateBody(BaseModel):
-    promocode: Optional[str] = None
+    promocode: str | None = None
 
 
 class OrderGetAllOrderbyQuery(str, Enum):
@@ -30,17 +29,17 @@ class OrderGetAllOrderbyQuery(str, Enum):
 
 
 class OrderGetOrderbyList(BaseModel):
-    order_by_list: List[OrderGetAllOrderbyQuery] = ["id"]
+    order_by_list: list[OrderGetAllOrderbyQuery] = ["id"]
 
 
 # ======================================================================= #
 #                     BaseModel - Product - pydantic                      #
 # ======================================================================= #
 class ProductGetQuery(BaseModel):
-    id: Optional[int] = 0
-    name: Optional[str] = None
-    description: Optional[str] = None
-    price: Optional[int] = None
+    id: int | None = 0
+    name: str | None = None
+    description: str | None = None
+    price: int | None = None
 
 
 class ProductCreateBody(BaseModel):
@@ -50,18 +49,18 @@ class ProductCreateBody(BaseModel):
 
 
 class ProductUpdateBody(BaseModel):
-    name: Optional[str] = ""
-    description: Optional[str] = ""
+    name: str | None = ""
+    description: str | None = ""
     price: int | str = ""
 
 
 # schemas are used when : get(GET) a OrderProductAssociation(Base)
 class AssociationGetQuery(BaseModel):
-    id: Optional[int] = 0
-    count: Optional[int] = 0
-    unit_price: Optional[int] = 0
-    order_id: Optional[int] = 0
-    product_id: Optional[int] = 0
+    id: int | None = 0
+    count: int | None = 0
+    unit_price: int | None = 0
+    order_id: int | None = 0
+    product_id: int | None = 0
 
 
 # =========================================================== #
@@ -100,33 +99,33 @@ class AssociationResp(BaseModel):
 #     relationship('Order', secondary='order_product_association')     #
 # ==================================================================== #
 class ProductRespWithOrders(ProductResp):
-    orders: List[OrderResp]
+    orders: list[OrderResp]
 
 
 class ProductRespWithsAssoc(ProductResp):
-    orders_details: List[AssociationResp]
+    orders_details: list[AssociationResp]
 
 
 class ProductRespWithOrdersAssoc(ProductResp):
-    orders: List[OrderResp]
-    orders_details: List[AssociationResp]
+    orders: list[OrderResp]
+    orders_details: list[AssociationResp]
 
 
 # ====================================================================== #
 #     relationship('Product', secondary='order_product_association')     #
 # ====================================================================== #
 class OrderRespWithProducts(OrderResp):
-    products: List[ProductResp]
+    products: list[ProductResp]
 
 
 class OrderRespWithAssoc(OrderResp):
-    products_details: List[AssociationResp]
+    products_details: list[AssociationResp]
 
 
 class OrderRespWithProductsAssoc(OrderResp):
-    products: List[ProductResp]
-    products_details: List[AssociationResp]
+    products: list[ProductResp]
+    products_details: list[AssociationResp]
 
 
 class OrderRespWithProductsDetails(OrderResp):
-    products: List[ProductRespWithsAssoc]
+    products: list[ProductRespWithsAssoc]

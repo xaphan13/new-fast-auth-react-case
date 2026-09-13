@@ -136,6 +136,7 @@ SSR-разметку удобно: без шаблонизатора пришл�
 # app/main.py
 templates = Jinja2Templates(directory="app/templates")
 
+
 @app.get("/")
 async def landing_page(request: Request):
     return templates.TemplateResponse("landing.html", {"request": request})

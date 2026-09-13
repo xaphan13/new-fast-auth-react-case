@@ -206,31 +206,33 @@ WEBHOOK_PORT=8000
 from pydantic_settings import BaseSettings
 from typing import Optional
 
+
 class Settings(BaseSettings):
     # Telegram
     telegram_bot_token: str
     webhook_url: str
     webhook_host: str = "0.0.0.0"
     webhook_port: int = 8000
-    
+
     # YooKassa
     yookassa_shop_id: str
     yookassa_secret_key: str
-    
+
     # Database
     database_url: str
     mongodb_url: str
-    
+
     # Redis
     redis_url: str
-    
+
     # Security
     secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
-    
+
     class Config:
         env_file = ".env"
+
 
 settings = Settings()
 ```
@@ -247,9 +249,11 @@ from app.config import settings
 engine = create_async_engine(settings.database_url, echo=True)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session
+
 
 # MongoDB
 mongo_client = AsyncIOMotorClient(settings.mongodb_url)
@@ -264,12 +268,14 @@ from sqlalchemy.sql import func
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
 
+
 class Base(AsyncAttrs, DeclarativeBase):
     pass
 
+
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     telegram_id = Column(Integer, unique=True, index=True)
     username = Column(String, nullable=True)
@@ -287,9 +293,10 @@ from sqlalchemy import Column, Integer, String, Text, Float, Boolean, DateTime
 from sqlalchemy.sql import func
 from app.models.user import Base
 
+
 class Product(Base):
     __tablename__ = "products"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     description = Column(Text)
@@ -309,15 +316,17 @@ from sqlalchemy.sql import func
 from app.models.user import Base
 import enum
 
+
 class OrderStatus(str, enum.Enum):
     PENDING = "pending"
     PAID = "paid"
     CANCELLED = "cancelled"
     SHIPPED = "shipped"
 
+
 class Order(Base):
     __tablename__ = "orders"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
     total_amount = Column(Float)
@@ -325,19 +334,20 @@ class Order(Base):
     payment_id = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     user = relationship("User")
     items = relationship("OrderItem", back_populates="order")
 
+
 class OrderItem(Base):
     __tablename__ = "order_items"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"))
     product_id = Column(Integer, ForeignKey("products.id"))
     quantity = Column(Integer)
     price = Column(Float)
-    
+
     order = relationship("Order", back_populates="items")
     product = relationship("Product")
 ```
@@ -349,25 +359,29 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
+
 class UserBase(BaseModel):
     telegram_id: int
     username: Optional[str] = None
     first_name: str
     last_name: Optional[str] = None
 
+
 class UserCreate(UserBase):
     pass
+
 
 class UserUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     is_active: Optional[bool] = None
 
+
 class User(UserBase):
     id: int
     is_active: bool
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 ```
@@ -379,14 +393,17 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
+
 class ProductBase(BaseModel):
     name: str
     description: str
     price: float
     image_url: Optional[str] = None
 
+
 class ProductCreate(ProductBase):
     pass
+
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
@@ -395,11 +412,12 @@ class ProductUpdate(BaseModel):
     image_url: Optional[str] = None
     is_active: Optional[bool] = None
 
+
 class Product(ProductBase):
     id: int
     is_active: bool
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 ```
@@ -412,36 +430,44 @@ from typing import List, Optional
 from datetime import datetime
 from enum import Enum
 
+
 class OrderStatus(str, Enum):
     PENDING = "pending"
     PAID = "paid"
     CANCELLED = "cancelled"
     SHIPPED = "shipped"
 
+
 class OrderItemBase(BaseModel):
     product_id: int
     quantity: int
 
+
 class OrderItemCreate(OrderItemBase):
     pass
+
 
 class OrderItem(OrderItemBase):
     id: int
     order_id: int
     price: float
-    
+
     class Config:
         from_attributes = True
+
 
 class OrderBase(BaseModel):
     user_id: int
     total_amount: float
 
+
 class OrderCreate(OrderBase):
     items: List[OrderItemCreate]
 
+
 class OrderUpdate(BaseModel):
     status: Optional[OrderStatus] = None
+
 
 class Order(OrderBase):
     id: int
@@ -449,7 +475,7 @@ class Order(OrderBase):
     payment_id: Optional[str] = None
     created_at: datetime
     items: List[OrderItem] = []
-    
+
     class Config:
         from_attributes = True
 ```
@@ -466,50 +492,54 @@ from app.config import settings
 from app.services.order_service import OrderService
 from app.services.payment_service import PaymentService
 
+
 class ShopStates(StatesGroup):
     viewing_products = State()
     creating_order = State()
+
 
 class TelegramService:
     def __init__(self):
         self.bot = Bot(token=settings.telegram_bot_token)
         self.dp = Dispatcher()
         self.setup_handlers()
-    
+
     def setup_handlers(self):
         @self.dp.message(Command("start"))
         async def cmd_start(message: Message):
-            await message.answer("Добро пожаловать в наш магазин! Используйте /products для просмотра товаров.")
-        
+            await message.answer(
+                "Добро пожаловать в наш магазин! Используйте /products для просмотра товаров."
+            )
+
         @self.dp.message(Command("products"))
         async def cmd_products(message: Message, state: FSMContext):
             # Здесь будет логика показа товаров
             await state.set_state(ShopStates.viewing_products)
             await message.answer("Список товаров будет здесь")
-        
+
         @self.dp.callback_query()
         async def handle_callback(callback: CallbackQuery):
             if callback.data.startswith("order_"):
                 product_id = int(callback.data.split("_")[1])
                 await self.create_order(callback.from_user.id, product_id, callback.message)
-    
+
     async def create_order(self, user_id: int, product_id: int, message):
         """Создание заказа и платежа"""
         order_service = OrderService()
         payment_service = PaymentService()
-        
+
         # Создаем заказ (здесь нужна реализация)
         # order = await order_service.create_order(...)
-        
+
         # Создаем платеж
         # payment = await payment_service.create_payment(...)
-        
+
         await message.answer("Заказ создан! Ссылка для оплаты будет здесь.")
-    
+
     async def send_message(self, chat_id: int, text: str, reply_markup=None):
         """Отправка сообщения пользователю"""
         await self.bot.send_message(chat_id, text, reply_markup=reply_markup)
-    
+
     async def start_polling(self):
         """Запуск polling режима"""
         await self.dp.start_polling(self.bot)
@@ -522,30 +552,25 @@ from yookassa import Payment
 import uuid
 from app.config import settings
 
+
 class PaymentService:
     def __init__(self):
         self.shop_id = settings.yookassa_shop_id
         self.secret_key = settings.yookassa_secret_key
-        
+
     async def create_payment(self, amount: float, description: str, return_url: str, order_id: str):
         """Создание платежа через ЮKassa"""
-        payment = Payment.create({
-            "amount": {
-                "value": str(amount),
-                "currency": "RUB"
-            },
-            "confirmation": {
-                "type": "redirect",
-                "return_url": return_url
-            },
-            "description": description,
-            "metadata": {
-                "order_id": order_id
-            },
-            "capture": True
-        })
+        payment = Payment.create(
+            {
+                "amount": {"value": str(amount), "currency": "RUB"},
+                "confirmation": {"type": "redirect", "return_url": return_url},
+                "description": description,
+                "metadata": {"order_id": order_id},
+                "capture": True,
+            }
+        )
         return payment
-    
+
     async def get_payment_status(self, payment_id: str):
         """Получение статуса платежа"""
         payment = Payment.find_one(payment_id)
@@ -561,70 +586,65 @@ from app.models.product import Product
 from app.models.user import User
 from sqlalchemy.ext.asyncio import AsyncSession
 
+
 class OrderService:
     async def create_order(self, db: AsyncSession, user_id: int, items: list):
         """Создание заказа"""
         # Получаем пользователя
         result = await db.execute(select(User).filter(User.id == user_id))
         user = result.scalar_one_or_none()
-        
+
         if not user:
             raise ValueError("User not found")
-        
+
         # Рассчитываем общую сумму
         total_amount = 0
         order_items = []
-        
+
         for item in items:
             result = await db.execute(select(Product).filter(Product.id == item["product_id"]))
             product = result.scalar_one_or_none()
-            
+
             if product:
                 item_total = product.price * item["quantity"]
                 total_amount += item_total
-                
+
                 order_item = OrderItem(
-                    product_id=item["product_id"],
-                    quantity=item["quantity"],
-                    price=product.price
+                    product_id=item["product_id"], quantity=item["quantity"], price=product.price
                 )
                 order_items.append(order_item)
-        
+
         # Создаем заказ
-        order = Order(
-            user_id=user_id,
-            total_amount=total_amount,
-            status="pending"
-        )
-        
+        order = Order(user_id=user_id, total_amount=total_amount, status="pending")
+
         db.add(order)
         await db.flush()
-        
+
         # Добавляем товары в заказ
         for item in order_items:
             item.order_id = order.id
             db.add(item)
-        
+
         await db.commit()
         await db.refresh(order)
-        
+
         return order
-    
+
     async def get_order(self, db: AsyncSession, order_id: int):
         """Получение заказа по ID"""
         result = await db.execute(select(Order).filter(Order.id == order_id))
         return result.scalar_one_or_none()
-    
+
     async def update_order_status(self, db: AsyncSession, order_id: int, status: str):
         """Обновление статуса заказа"""
         result = await db.execute(select(Order).filter(Order.id == order_id))
         order = result.scalar_one_or_none()
-        
+
         if order:
             order.status = status
             await db.commit()
             await db.refresh(order)
-        
+
         return order
 ```
 
@@ -639,25 +659,27 @@ import json
 
 router = APIRouter(prefix="/webhook", tags=["telegram"])
 
+
 @router.post("/telegram")
 async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """Webhook для получения сообщений от Telegram"""
     update_data = await request.json()
-    
+
     # Здесь будет обработка webhook от Telegram
     # В aiogram v3 webhook обрабатывается автоматически
-    
+
     return {"status": "ok"}
+
 
 @router.get("/set_webhook")
 async def set_webhook():
     """Установка webhook для Telegram бота"""
     from app.config import settings
     from aiogram import Bot
-    
+
     bot = Bot(token=settings.telegram_bot_token)
     await bot.set_webhook(settings.webhook_url)
-    
+
     return {"status": "webhook set"}
 ```
 
@@ -673,16 +695,15 @@ from app import models, schemas
 
 router = APIRouter(prefix="/products", tags=["products"])
 
+
 @router.get("/", response_model=List[schemas.Product])
 async def get_products(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        select(models.Product)
-        .filter(models.Product.is_active == True)
-        .offset(skip)
-        .limit(limit)
+        select(models.Product).filter(models.Product.is_active == True).offset(skip).limit(limit)
     )
     products = result.scalars().all()
     return products
+
 
 @router.post("/", response_model=schemas.Product)
 async def create_product(product: schemas.ProductCreate, db: AsyncSession = Depends(get_db)):
@@ -691,6 +712,7 @@ async def create_product(product: schemas.ProductCreate, db: AsyncSession = Depe
     await db.commit()
     await db.refresh(db_product)
     return db_product
+
 
 @router.get("/{product_id}", response_model=schemas.Product)
 async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
@@ -715,11 +737,13 @@ from app.services.payment_service import PaymentService
 
 router = APIRouter(prefix="/orders", tags=["orders"])
 
+
 @router.get("/", response_model=List[schemas.Order])
 async def get_orders(skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(models.Order).offset(skip).limit(limit))
     orders = result.scalars().all()
     return orders
+
 
 @router.get("/{order_id}", response_model=schemas.Order)
 async def get_order(order_id: int, db: AsyncSession = Depends(get_db)):
@@ -729,29 +753,31 @@ async def get_order(order_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Order not found")
     return order
 
+
 @router.post("/", response_model=schemas.Order)
 async def create_order(order: schemas.OrderCreate, db: AsyncSession = Depends(get_db)):
     order_service = OrderService()
     new_order = await order_service.create_order(db, order.user_id, order.items)
     return new_order
 
+
 @router.post("/webhook/yookassa")
 async def yookassa_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """Webhook для получения уведомлений от ЮKassa"""
     data = await request.json()
-    
+
     if data.get("event") == "payment.succeeded":
         payment = data.get("object", {})
         order_id = payment.get("metadata", {}).get("order_id")
-        
+
         if order_id:
             order_service = OrderService()
             updated_order = await order_service.update_order_status(db, int(order_id), "paid")
-            
+
             if updated_order:
                 # Здесь можно отправить уведомление пользователю через Telegram
                 pass
-    
+
     return {"status": "ok"}
 ```
 
@@ -768,6 +794,7 @@ from app.api.routes import telegram, products, orders
 from app.bot.bot import start_bot
 import asyncio
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Создание таблиц
@@ -775,14 +802,15 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(UserBase.metadata.create_all)
         await conn.run_sync(ProductBase.metadata.create_all)
         await conn.run_sync(OrderBase.metadata.create_all)
-    
+
     # Запуск Telegram бота
     bot_task = asyncio.create_task(start_bot())
-    
+
     yield
-    
+
     # Очистка при завершении
     bot_task.cancel()
+
 
 app = FastAPI(title="Telegram Shop API", version="1.0.0", lifespan=lifespan)
 
@@ -791,9 +819,11 @@ app.include_router(telegram.router)
 app.include_router(products.router)
 app.include_router(orders.router)
 
+
 @app.get("/")
 async def root():
     return {"message": "Telegram Shop API"}
+
 
 @app.get("/health")
 async def health_check():
@@ -847,12 +877,14 @@ celery = Celery(__name__)
 celery.conf.broker_url = settings.redis_url
 celery.conf.result_backend = settings.redis_url
 
+
 @celery.task
 def send_telegram_notification(chat_id: int, message: str):
     """Отправка уведомления в Telegram"""
     # Здесь будет логика отправки сообщения
     print(f"Sending message to {chat_id}: {message}")
     return True
+
 
 @celery.task
 def process_order_payment(order_id: int):
@@ -998,7 +1030,8 @@ if config.config_file_name is not None:
 target_metadata = [UserBase.metadata, ProductBase.metadata, OrderBase.metadata]
 
 # Set the database URL
-config.set_main_option('sqlalchemy.url', settings.database_url.replace('+asyncpg', ''))
+config.set_main_option("sqlalchemy.url", settings.database_url.replace("+asyncpg", ""))
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -1023,6 +1056,7 @@ def run_migrations_offline() -> None:
     with context.begin_transaction():
         context.run_migrations()
 
+
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
@@ -1037,12 +1071,11 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()
@@ -1056,89 +1089,115 @@ else:
 """Initial migration
 
 Revision ID: 0001
-Revises: 
+Revises:
 Create Date: 2024-01-01 00:00:00.000000
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '0001'
+revision = "0001"
 down_revision = None
 branch_labels = None
 depends_on = None
 
+
 def upgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
-    op.create_table('users',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('telegram_id', sa.Integer(), nullable=True),
-        sa.Column('username', sa.String(), nullable=True),
-        sa.Column('first_name', sa.String(), nullable=True),
-        sa.Column('last_name', sa.String(), nullable=True),
-        sa.Column('is_active', sa.Boolean(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-        sa.PrimaryKeyConstraint('id')
+    op.create_table(
+        "users",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("telegram_id", sa.Integer(), nullable=True),
+        sa.Column("username", sa.String(), nullable=True),
+        sa.Column("first_name", sa.String(), nullable=True),
+        sa.Column("last_name", sa.String(), nullable=True),
+        sa.Column("is_active", sa.Boolean(), nullable=True),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True
+        ),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
-    op.create_index(op.f('ix_users_telegram_id'), 'users', ['telegram_id'], unique=True)
+    op.create_index(op.f("ix_users_id"), "users", ["id"], unique=False)
+    op.create_index(op.f("ix_users_telegram_id"), "users", ["telegram_id"], unique=True)
 
-    op.create_table('products',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('name', sa.String(), nullable=True),
-        sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('price', sa.Float(), nullable=True),
-        sa.Column('image_url', sa.String(), nullable=True),
-        sa.Column('is_active', sa.Boolean(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-        sa.PrimaryKeyConstraint('id')
+    op.create_table(
+        "products",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("name", sa.String(), nullable=True),
+        sa.Column("description", sa.Text(), nullable=True),
+        sa.Column("price", sa.Float(), nullable=True),
+        sa.Column("image_url", sa.String(), nullable=True),
+        sa.Column("is_active", sa.Boolean(), nullable=True),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True
+        ),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f('ix_products_id'), 'products', ['id'], unique=False)
-    op.create_index(op.f('ix_products_name'), 'products', ['name'], unique=False)
+    op.create_index(op.f("ix_products_id"), "products", ["id"], unique=False)
+    op.create_index(op.f("ix_products_name"), "products", ["name"], unique=False)
 
-    op.create_table('orders',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('user_id', sa.Integer(), nullable=True),
-        sa.Column('total_amount', sa.Float(), nullable=True),
-        sa.Column('status', sa.Enum('PENDING', 'PAID', 'CANCELLED', 'SHIPPED', name='orderstatus'), nullable=True),
-        sa.Column('payment_id', sa.String(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
-        sa.PrimaryKeyConstraint('id')
+    op.create_table(
+        "orders",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("user_id", sa.Integer(), nullable=True),
+        sa.Column("total_amount", sa.Float(), nullable=True),
+        sa.Column(
+            "status",
+            sa.Enum("PENDING", "PAID", "CANCELLED", "SHIPPED", name="orderstatus"),
+            nullable=True,
+        ),
+        sa.Column("payment_id", sa.String(), nullable=True),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=True
+        ),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["user_id"],
+            ["users.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f('ix_orders_id'), 'orders', ['id'], unique=False)
+    op.create_index(op.f("ix_orders_id"), "orders", ["id"], unique=False)
 
-    op.create_table('order_items',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('order_id', sa.Integer(), nullable=True),
-        sa.Column('product_id', sa.Integer(), nullable=True),
-        sa.Column('quantity', sa.Integer(), nullable=True),
-        sa.Column('price', sa.Float(), nullable=True),
-        sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ),
-        sa.ForeignKeyConstraint(['product_id'], ['products.id'], ),
-        sa.PrimaryKeyConstraint('id')
+    op.create_table(
+        "order_items",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column("order_id", sa.Integer(), nullable=True),
+        sa.Column("product_id", sa.Integer(), nullable=True),
+        sa.Column("quantity", sa.Integer(), nullable=True),
+        sa.Column("price", sa.Float(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["order_id"],
+            ["orders.id"],
+        ),
+        sa.ForeignKeyConstraint(
+            ["product_id"],
+            ["products.id"],
+        ),
+        sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index(op.f('ix_order_items_id'), 'order_items', ['id'], unique=False)
+    op.create_index(op.f("ix_order_items_id"), "order_items", ["id"], unique=False)
     # ### end Alembic commands ###
+
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index(op.f('ix_order_items_id'), table_name='order_items')
-    op.drop_table('order_items')
-    op.drop_index(op.f('ix_orders_id'), table_name='orders')
-    op.drop_table('orders')
-    op.drop_index(op.f('ix_products_name'), table_name='products')
-    op.drop_index(op.f('ix_products_id'), table_name='products')
-    op.drop_table('products')
-    op.drop_index(op.f('ix_users_telegram_id'), table_name='users')
-    op.drop_index(op.f('ix_users_id'), table_name='users')
-    op.drop_table('users')
-    
+    op.drop_index(op.f("ix_order_items_id"), table_name="order_items")
+    op.drop_table("order_items")
+    op.drop_index(op.f("ix_orders_id"), table_name="orders")
+    op.drop_table("orders")
+    op.drop_index(op.f("ix_products_name"), table_name="products")
+    op.drop_index(op.f("ix_products_id"), table_name="products")
+    op.drop_table("products")
+    op.drop_index(op.f("ix_users_telegram_id"), table_name="users")
+    op.drop_index(op.f("ix_users_id"), table_name="users")
+    op.drop_table("users")
+
     # Drop enum type
     op.execute("DROP TYPE IF EXISTS orderstatus")
     # ### end Alembic commands ###
@@ -1162,21 +1221,26 @@ SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=True)
 TestingSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+
 async def override_get_db():
     async with TestingSessionLocal() as session:
         yield session
 
+
 app.dependency_overrides[get_db] = override_get_db
+
 
 @pytest.fixture(scope="module")
 def client():
     with TestClient(app) as c:
         yield c
 
+
 def test_read_main(client):
     response = client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "Telegram Shop API"}
+
 
 def test_health_check(client):
     response = client.get("/health")

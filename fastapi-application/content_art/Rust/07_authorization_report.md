@@ -143,7 +143,7 @@ authentication_backend = AuthenticationBackend(
 # core/authentication/transport.py
 cookie_transport = CookieTransport(
     cookie_max_age=3600,
-    cookie_secure=False,    # TODO: move to settings
+    cookie_secure=False,  # TODO: move to settings
 )
 ```
 

@@ -53,16 +53,24 @@ uv add --dev ruff black
 
 ```python
 # schemas
-class ItemCreate(BaseModel): title: str
+class ItemCreate(BaseModel):
+    title: str
+
+
 class ItemResp(BaseModel):
-    id: int; title: str
+    id: int
+    title: str
     model_config = ConfigDict(from_attributes=True)
+
 
 # crud
 async def create_item(session: AsyncSession, data: ItemCreate) -> Item:
     item = Item(**data.model_dump())
-    session.add(item); await session.commit(); await session.refresh(item)
+    session.add(item)
+    await session.commit()
+    await session.refresh(item)
     return item
+
 
 # router
 @router.post("/items", response_model=ItemResp)

@@ -6,18 +6,18 @@ Create Date: 2026-09-12 22:51:01.850247
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
+from typing import Union
 
-from alembic import op
+import fastapi_users_db_sqlalchemy.generics
 import sqlalchemy as sa
-import fastapi_users_db_sqlalchemy.generics  # noqa: F401  GUID() для id
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "f4c23f4a9c06"
-down_revision: Union[str, None] = "b59cbdf15878"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "b59cbdf15878"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -27,9 +27,7 @@ def upgrade() -> None:
         sa.Column("username", sa.String(length=20), nullable=True),
         sa.Column("image_file", sa.String(length=20), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column(
-            "id", fastapi_users_db_sqlalchemy.generics.GUID(), nullable=False
-        ),
+        sa.Column("id", fastapi_users_db_sqlalchemy.generics.GUID(), nullable=False),
         sa.Column("email", sa.String(length=320), nullable=False),
         sa.Column("hashed_password", sa.String(length=1024), nullable=False),
         sa.Column("is_active", sa.Boolean(), nullable=False),

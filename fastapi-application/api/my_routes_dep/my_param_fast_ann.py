@@ -1,19 +1,17 @@
-from fastapi import (
-    Path,
-    Query,
-    Header,
-    Cookie,
-    Request,
-    Response,
-    APIRouter,
-)
-
 from typing import Annotated
 
-from .pydantic_schema import RespAnnotated
-
 from config_log import logF
+from fastapi import (
+    APIRouter,
+    Cookie,
+    Header,
+    Path,
+    Query,
+    Request,
+    Response,
+)
 
+from .pydantic_schema import RespAnnotated
 
 router_param_fast_cls = APIRouter(tags=["My Parameters - FastAPI Class Annotated"])
 

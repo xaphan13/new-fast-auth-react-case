@@ -1,10 +1,8 @@
-from fastapi import APIRouter
-
 from core.config import settings
+from fastapi import APIRouter
 
 from .dependencies import router_dep_examples
 from .my_routes_dep import router_param_extract
-
 
 router_api = APIRouter(
     prefix=settings.api.prefix,

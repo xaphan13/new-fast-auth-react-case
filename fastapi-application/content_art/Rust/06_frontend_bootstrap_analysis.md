@@ -120,6 +120,7 @@ Bootstrap 5.3.7 — актуальная версия на момент анал
    - Подключить `StaticFiles` в `create_fastapi_app.py`:
      ```python
      from fastapi.staticfiles import StaticFiles
+
      app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
      ```
    - Переместить JS из `home.html` → `static/js/home.js`, из `verification.html` → `static/js/verification.js`

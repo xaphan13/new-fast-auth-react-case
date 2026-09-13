@@ -9,9 +9,12 @@ settings.auth_users.password_min_length и правка одной строки 
 Секрет токенов берётся из существующего settings.web.secret_key.
 """
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from uuid import UUID
 
+from config_log import logF
+from core.config import settings
+from db_core.db_async import CurrentSession
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, UUIDIDMixin
 from fastapi_users.db import SQLAlchemyUserDatabase
@@ -20,9 +23,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth_users.models import User
-from config_log import logF
-from core.config import settings
-from db_core.db_async import CurrentSession
 
 
 class UserManager(UUIDIDMixin, BaseUserManager[User, UUID]):
