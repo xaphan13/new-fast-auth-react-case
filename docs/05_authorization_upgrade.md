@@ -1,6 +1,6 @@
 # 05. Авторизация: как улучшить или заменить
 
-> Продолжение [04_authorization.md](authorization.md): там разобрано, как
+> Продолжение [04_authorization.md](04_authorization.md): там разобрано, как
 > устроен текущий слой и почему он такой; здесь — куда его развивать. Два пути:
 > **A** — точечно укрепить существующую самописную схему (~50–150 строк) и
 > **B** — заменить её готовой библиотекой (fastapi-users и другие). Для каждого
@@ -53,14 +53,15 @@ dev; в проде подделка любой сессии. Минимальн�
 # core/config.py
 from pydantic import BaseModel, model_validator
 
-
 class WebConfig(BaseModel):
     secret_key: str = "dev-insecure-secret-key-change-me"
 
     @model_validator(mode="after")
     def _warn_insecure_secret(self) -> "WebConfig":
         if self.secret_key.startswith("dev-insecure"):
-            logF.warning("web.secret_key — dev-значение; для прода задайте APP__WEB__SECRET_KEY")
+            logF.warning(
+                "web.secret_key — dev-значение; для прода задайте APP__WEB__SECRET_KEY"
+            )
         return self
 ```
 
@@ -81,7 +82,7 @@ app.add_middleware(
     secret_key=settings.web.secret_key,
     max_age=14 * 24 * 3600,
     same_site="lax",
-    https_only=settings.web.cookie_secure,  # новое поле, True в прод-профиле
+    https_only=settings.web.cookie_secure,   # новое поле, True в прод-профиле
 )
 ```
 
@@ -100,7 +101,6 @@ app.add_middleware(
 ```python
 # md_articles/helpers_auth.py
 import secrets
-
 
 def login_user(request: Request, user_id: int) -> None:
     # анти-fixation: чистим прежнее содержимое сессии и выдаём свежий CSRF
@@ -162,7 +162,6 @@ async def login_api(request: Request, ...):              # request обязат�
 # md_articles/schema_blog.py
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
-
 class RegisterIn(BaseModel):
     username: str = Field(min_length=2, max_length=20)
     email: EmailStr
@@ -198,8 +197,8 @@ from itsdangerous import URLSafeTimedSerializer
 reset_ser = URLSafeTimedSerializer(settings.web.secret_key, salt="password-reset")
 verify_ser = URLSafeTimedSerializer(settings.web.secret_key, salt="email-verify")
 
-token = reset_ser.dumps({"user_id": user.id})  # в письмо /api/blog/reset/<token>
-data = reset_ser.loads(token, max_age=3600)  # проверка при переходе: 1 час
+token = reset_ser.dumps({"user_id": user.id})        # в письмо /api/blog/reset/<token>
+data = reset_ser.loads(token, max_age=3600)          # проверка при переходе: 1 час
 ```
 
 Дальше нужны: два POST-роута (`forgot_password` — принимает email, молча
@@ -213,9 +212,7 @@ SMTP/aioSMTP). Соль (`salt=...`) разделяет пространства
 
 ```python
 import secrets
-
-if not secrets.compare_digest(form_token, session_token):
-    ...
+if not secrets.compare_digest(form_token, session_token): ...
 ```
 
 Формальная строгость: сравнение не «сдаётся» на первом несовпадающем байте.
@@ -307,10 +304,8 @@ A1–A5 + A8 — примерно 50 строк суммарно и закрыв
 # md_articles/models.py
 from fastapi_users.db import SQLAlchemyBaseUserTable
 
-
 class BlogUser(SQLAlchemyBaseUserTable[int], Base):
     """Базовый класс даёт email, hashed_password, is_active, is_verified, is_superuser."""
-
     id: Mapped[int_primary_key]
     username: Mapped[str_len_20] = mapped_column(unique=True)
     image_file: Mapped[str_len_20] = mapped_column(default="default.jpg")
@@ -321,8 +316,7 @@ class BlogUser(SQLAlchemyBaseUserTable[int], Base):
 ```python
 from fastapi_users.db import SQLAlchemyUserDatabase
 
-
-async def get_user_db(session: CurrentSession):  # наш DI-алиас!
+async def get_user_db(session: CurrentSession):          # наш DI-алиас!
     yield SQLAlchemyUserDatabase(session, BlogUser)
 ```
 
@@ -331,13 +325,12 @@ async def get_user_db(session: CurrentSession):  # наш DI-алиас!
 ```python
 from fastapi_users import BaseUserManager, IntegerIDMixin
 
-
 class UserManager(IntegerIDMixin, BaseUserManager[BlogUser, int]):
     reset_password_token_secret = settings.web.secret_key
     verification_token_secret = settings.web.secret_key
 
     async def on_after_forgot_password(self, user, token, request=None):
-        send_email(user.email, f"/api/blog/auth/reset/{token}")  # ваша логика
+        send_email(user.email, f"/api/blog/auth/reset/{token}")   # ваша логика
 ```
 
 **Backend: cookie-транспорт + стратегия.** Параметры cookie по умолчанию —
@@ -347,25 +340,19 @@ class UserManager(IntegerIDMixin, BaseUserManager[BlogUser, int]):
 
 ```python
 from fastapi_users.authentication import (
-    AuthenticationBackend,
-    CookieTransport,
-    JWTStrategy,
+    AuthenticationBackend, CookieTransport, JWTStrategy,
 )
 
 cookie_transport = CookieTransport(
-    cookie_max_age=14 * 24 * 3600,  # как сейчас в SessionMiddleware
-    cookie_secure=False,  # True за HTTPS
+    cookie_max_age=14 * 24 * 3600,   # как сейчас в SessionMiddleware
+    cookie_secure=False,             # True за HTTPS
 )
-
 
 def get_jwt_strategy() -> JWTStrategy:
     return JWTStrategy(secret=settings.web.secret_key, lifetime_seconds=14 * 24 * 3600)
 
-
 auth_backend = AuthenticationBackend(
-    name="cookie",
-    transport=cookie_transport,
-    get_strategy=get_jwt_strategy,
+    name="cookie", transport=cookie_transport, get_strategy=get_jwt_strategy,
 )
 ```
 
@@ -381,9 +368,9 @@ JWT + перечитывание в middleware.
 ```python
 fastapi_users = FastAPIUsers[BlogUser, int](get_user_manager, [auth_backend])
 
-current_active_user = fastapi_users.current_user(active=True)  # 401
-current_verified = fastapi_users.current_user(active=True, verified=True)  # +403
-current_superuser = fastapi_users.current_user(active=True, superuser=True)  # +403
+current_active_user  = fastapi_users.current_user(active=True)     # 401
+current_verified     = fastapi_users.current_user(active=True, verified=True)   # +403
+current_superuser    = fastapi_users.current_user(active=True, superuser=True)  # +403
 ```
 
 Обратите внимание на семантику статусов: неаутентифицированный → **401**
@@ -394,21 +381,14 @@ current_superuser = fastapi_users.current_user(active=True, superuser=True)  # +
 **Роутеры** — 6 наших эндпоинтов заменяются пятью включениями:
 
 ```python
-app.include_router(
-    fastapi_users.get_auth_router(auth_backend),  # login/logout
-    prefix="/api/blog/auth",
-    tags=["auth"],
-)
-app.include_router(
-    fastapi_users.get_register_router(UserOut, UserCreate), prefix="/api/blog/auth", tags=["auth"]
-)
-app.include_router(fastapi_users.get_verify_router(UserOut), ...)  # verify
-app.include_router(fastapi_users.get_reset_password_router(), ...)  # forgot/reset
-app.include_router(
-    fastapi_users.get_users_router(UserOut, UserUpdate),  # me/PATCH
-    prefix="/api/blog/users",
-    tags=["users"],
-)
+app.include_router(fastapi_users.get_auth_router(auth_backend),          # login/logout
+                   prefix="/api/blog/auth", tags=["auth"])
+app.include_router(fastapi_users.get_register_router(UserOut, UserCreate),
+                   prefix="/api/blog/auth", tags=["auth"])
+app.include_router(fastapi_users.get_verify_router(UserOut), ...)        # verify
+app.include_router(fastapi_users.get_reset_password_router(), ...)       # forgot/reset
+app.include_router(fastapi_users.get_users_router(UserOut, UserUpdate),  # me/PATCH
+                   prefix="/api/blog/users", tags=["users"])
 ```
 
 ### 3.4. Как миграция ляжет на этот проект

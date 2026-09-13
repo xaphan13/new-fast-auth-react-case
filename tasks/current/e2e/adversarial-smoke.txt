@@ -1,0 +1,106 @@
+Adversarial smoke run: 2026-09-13T19:53:01+03:00
+Base URL: http://127.0.0.1:8000
+Server: started by this run from fastapi-application; PID 900088
+
+===== GET /api/blog/art_manage without cookie =====
+HTTP/1.1 401 Unauthorized
+content-type: application/json
+{"detail":"Unauthorized"}
+
+===== GET /api/blog/articles/999999999 =====
+HTTP/1.1 404 Not Found
+content-type: application/json
+{"detail":"Article not found"}
+
+===== POST /auth/jwt/login empty form body =====
+HTTP/1.1 422 Unprocessable Entity
+content-type: application/json
+{"detail":[{"type":"missing","loc":["body","username"],"msg":"Field required","input":null},{"type":"missing","loc":["body","password"],"msg":"Field required","input":null}]}
+
+===== POST /auth/jwt/login username only (username=) =====
+HTTP/1.1 422 Unprocessable Entity
+content-type: application/json
+{"detail":[{"type":"missing","loc":["body","username"],"msg":"Field required","input":null},{"type":"missing","loc":["body","password"],"msg":"Field required","input":null}]}
+
+===== POST /auth/jwt/login password only (password=) =====
+HTTP/1.1 422 Unprocessable Entity
+content-type: application/json
+{"detail":[{"type":"missing","loc":["body","username"],"msg":"Field required","input":null},{"type":"missing","loc":["body","password"],"msg":"Field required","input":null}]}
+
+===== POST /auth/jwt/logout without cookie =====
+HTTP/1.1 401 Unauthorized
+content-type: application/json
+{"detail":"Unauthorized"}
+
+===== GET /users/me fake auth cookie =====
+HTTP/1.1 401 Unauthorized
+content-type: application/json
+{"detail":"Unauthorized"}
+
+===== GET /api/not-existing =====
+HTTP/1.1 404 Not Found
+content-type: application/json
+{"detail":"Not Found"}
+
+===== GET /not-existing-spa =====
+HTTP/1.1 404 Not Found
+content-type: application/json
+{"detail":"Frontend не собран: выполните npm run build в frontend/"}
+
+===== OPTIONS /auth/jwt/login =====
+HTTP/1.1 405 Method Not Allowed
+allow: POST
+content-type: application/json
+{"detail":"Method Not Allowed"}
+
+===== GET /api/blog/art_manage/meta without cookie =====
+HTTP/1.1 404 Not Found
+content-type: application/json
+{"detail":"Not Found"}
+
+===== POST /api/blog/art_manage/meta no body =====
+HTTP/1.1 401 Unauthorized
+content-type: application/json
+{"detail":"Unauthorized"}
+
+===== POST /api/blog/art_manage/meta JSON body without cookie =====
+HTTP/1.1 401 Unauthorized
+content-type: application/json
+{"detail":"Unauthorized"}
+
+===== POST /api/blog/art_manage/meta form body without cookie =====
+HTTP/1.1 401 Unauthorized
+content-type: application/json
+{"detail":"Unauthorized"}
+
+===== PUT /api/blog/art_manage/meta fake cookie JSON body =====
+HTTP/1.1 405 Method Not Allowed
+allow: POST
+content-type: application/json
+{"detail":"Method Not Allowed"}
+
+===== POST /api/blog/art_manage/meta fake cookie no body =====
+HTTP/1.1 401 Unauthorized
+content-type: application/json
+{"detail":"Unauthorized"}
+
+===== POST /api/blog/art_manage/meta fake cookie malformed JSON =====
+HTTP/1.1 422 Unprocessable Entity
+content-type: application/json
+{"detail":[{"type":"json_invalid","loc":["body",1],"msg":"JSON decode error","input":{},"ctx":{"error":"Expecting property name enclosed in double quotes"}}]}
+
+===== Health check after smoke =====
+HTTP/1.1 200 OK
+content-type: application/json
+/openapi.json response began with {"openapi":"3.1.0"...
+
+Comparison against docs/04_authorization.md and current implementation:
+- Protected art_manage and users/me reject absent/garbage auth with 401 Unauthorized.
+- logout without cookie returns the documented 401 behavior.
+- login requires both form fields; empty/incomplete forms return FastAPI 422 validation.
+- unknown API path returns JSON 404.
+- SPA fallback without frontend/dist returns the documented build-hint 404; not treated as auth defect.
+- unsupported methods return 405 with the allowed method.
+- meta endpoint remains protected before body processing for absent/invalid auth; malformed JSON with an invalid cookie is rejected as 422 by request parsing.
+
+Result: no unexpected behavior observed; no destructive operations performed.
