@@ -87,7 +87,7 @@ adversary — в `tasks/current/ADVERSARIAL_REVIEW.md`, сценарии и сы
 | `APP__DB__ECHO` | нет | `0` |
 | `APP__RUN__HOST` / `APP__RUN__PORT` | нет | `0.0.0.0` / `8000` |
 | `APP__GUNICORN__WORKERS` | нет | `1` |
-| `APP__WEB__SECRET_KEY` | нет | dev-значение (подпись сессий блога) |
+| `APP__WEB__SECRET_KEY` | нет | dev-значение (подпись JWT и auth-токенов) |
 
 Env-файлы лежат в `fastapi-application/` и **закоммичены** (`prod_db.env`, `dev_sqlite.env`) — это
 учебный проект без секретов; `.env` (если создаёте) тоже в каталоге приложения и имеет
@@ -104,8 +104,14 @@ Env-файлы лежат в `fastapi-application/` и **закоммичены*
 
 ## Документация
 
-В папке [`docs/`](docs/) лежит подробная документация по проекту (на русском) —
-обращайтесь к ней, прежде чем блуждать по исходникам:
+В папке [`docs/`](docs/) лежит актуальная техническая документация по проекту:
+
+- [01_project_structure.md](docs/01_project_structure.md) — карта файлов и API-инвентарь;
+- [02_architecture.md](docs/02_architecture.md) — слои и границы приложения;
+- [03_execution_flow.md](docs/03_execution_flow.md) — запуск и прохождение запросов;
+- [04_authorization.md](docs/04_authorization.md) — текущая авторизация `fastapi-users`;
+- [05_authorization_upgrade.md](docs/05_authorization_upgrade.md) — варианты дальнейшего развития auth;
+- [06_blog.md](docs/06_blog.md) — отдельное устройство блога и реестра статей.
 
 ## Индекс кодовой базы
 
@@ -119,8 +125,8 @@ Env-файлы лежат в `fastapi-application/` и **закоммичены*
 
 ```bash
 uv run ruff check .                                                        # линтер (ruff в зависимостях)
-cd fastapi-application && ../.venv/bin/python -c "from main import main_app; print(len(main_app.routes))"   # 42
-cd fastapi-application && ../.venv/bin/uvicorn main:main_app --port 8000    # затем curl /docs, /users/get_all_users, /api/blog/articles, /
+cd fastapi-application && ../.venv/bin/python -c "from main import main_app; print(len(main_app.openapi()['paths']))"   # 32 path-ключа OpenAPI
+cd fastapi-application && ../.venv/bin/uvicorn main:main_app --port 8000    # затем curl /docs, /users/me, /api/blog/articles, /
 ```
 
 Тестов нет — изменения проверяются запуском приложения и curl-запросами. Подробные
